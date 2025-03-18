@@ -19,6 +19,9 @@ export const FONTS = {
     bold: 'System',
 };
 
+import { Dimensions } from 'react-native';
+const { width, height } = Dimensions.get('window');
+
 // Spacing
 export const SIZES = {
     base: 8,
@@ -28,6 +31,8 @@ export const SIZES = {
     extraLarge: 24,
     padding: 15,
     radius: 10,
+    width,
+    height,
 };
 
 export default { COLORS, FONTS, SIZES }; 

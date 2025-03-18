@@ -29,6 +29,11 @@ const Header = ({ title = 'A-Kart', showBack = false, showCart = true }) => {
 
     const cartItemCount = getTotalCartItems ? getTotalCartItems() : 0;
 
+    // Choose the appropriate logo based on dark mode
+    const logoSource = isDarkMode
+        ? require('../../public/assets/logo_dark.jpg')
+        : require('../../public/assets/logo.jpg');
+
     return (
         <View style={[styles.container, {
             backgroundColor: themeColors.white,
@@ -48,7 +53,7 @@ const Header = ({ title = 'A-Kart', showBack = false, showCart = true }) => {
 
             <View style={styles.centerContainer}>
                 <Image
-                    source={require('../../public/assets/logo.jpg')}
+                    source={logoSource}
                     style={styles.logo}
                 />
                 <Text style={[styles.title, { color: themeColors.secondary }]}>{title}</Text>
@@ -101,6 +106,9 @@ const styles = StyleSheet.create({
         height: 30,
         borderRadius: 15,
         marginRight: 8,
+        borderWidth: 1,
+        borderColor: '#f0f0f0',
+        overflow: 'hidden',
     },
     backButton: {
         padding: 5,

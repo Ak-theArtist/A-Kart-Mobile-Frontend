@@ -7,6 +7,7 @@ import { StatusBar, View, Image, Text, Platform } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
 import { ThemeContext } from '../context/ThemeContext';
 import CustomTabBar from '../components/CustomTabBar';
+import SplashScreen from '../screens/SplashScreen';
 
 // Import screens
 import HomeScreen from '../screens/HomeScreen';
@@ -216,11 +217,16 @@ const AuthStack = () => {
 };
 
 const AppNavigator = () => {
-    const { user } = useContext(AuthContext);
+    const { user, isLoading } = useContext(AuthContext);
     const { isDarkMode, colors } = useContext(ThemeContext);
 
     // Use colors from context or default colors if not available
     const themeColors = colors || DEFAULT_COLORS;
+
+    // Show SplashScreen while checking authentication status
+    if (isLoading) {
+        return <SplashScreen />;
+    }
 
     return (
         <View style={{ flex: 1, backgroundColor: themeColors.background }}>

@@ -2,36 +2,94 @@ import React, { createContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../utils/api';
 import axios from 'axios';
+import { Buffer } from 'buffer';
+
+// Helper function to decode JWT token payload
+const decodeJWT = (token) => {
+    try {
+        const payloadBase64 = token.split('.')[1];
+        const normalizedPayload = payloadBase64
+            .replace(/-/g, '+')
+            .replace(/_/g, '/');
+        const payloadBuffer = Buffer.from(normalizedPayload, 'base64');
+        const payloadString = payloadBuffer.toString('utf8');
+        return JSON.parse(payloadString);
+    } catch (error) {
+        console.error('Error decoding JWT:', error);
+        return {};
+    }
+};
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
 
     useEffect(() => {
         // Check if user is logged in
         const checkUserLoggedIn = async () => {
+            setIsLoading(true);
             try {
                 const token = await AsyncStorage.getItem('token');
                 if (token) {
                     console.log('Checking user login with token:', token.substring(0, 10) + '...');
 
-                    const response = await api.get('/auth/me', {
-                        withCredentials: true
-                    });
+                    // Configure token in axios
+                    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
-                    // Store token in user object for easy access
-                    setUser({
-                        ...response.data,
-                        token: token
-                    });
+                    try {
+                        const response = await api.get('/auth/me', {
+                            withCredentials: true
+                        });
+
+                        // Store token in user object for easy access
+                        setUser({
+                            ...response.data,
+                            token: token
+                        });
+                    } catch (apiError) {
+                        console.error('API error checking user login:', apiError);
+
+                        // If we get a 401 Unauthorized, the token might be expired or invalid
+                        // But we'll keep the token and not log the user out
+                        if (apiError.response && apiError.response.status === 401) {
+                            console.log('Token might be expired, but keeping user logged in');
+
+                            // Try to create a minimal user object from the token
+                            try {
+                                // Parse the JWT token to get basic user info
+                                const tokenData = decodeJWT(token);
+
+                                setUser({
+                                    _id: tokenData.id || tokenData.sub,
+                                    email: tokenData.email,
+                                    name: tokenData.name || 'User',
+                                    token: token
+                                });
+                            } catch (tokenError) {
+                                console.error('Error parsing token:', tokenError);
+                                // Even if parsing fails, keep a minimal user object
+                                setUser({
+                                    token: token,
+                                    name: 'User'
+                                });
+                            }
+                        } else {
+                            // For other errors, log out
+                            await AsyncStorage.removeItem('token');
+                            setUser(null);
+                        }
+                    }
+                } else {
+                    setUser(null);
                 }
             } catch (error) {
                 console.error('Error checking user login status:', error);
-                await AsyncStorage.removeItem('token');
                 setUser(null);
+            } finally {
+                setIsLoading(false);
             }
         };
 
@@ -42,7 +100,23 @@ export const AuthProvider = ({ children }) => {
         setIsLoading(true);
         setError(null);
         try {
-            console.log('Attempting login with:', { email });
+            // CRITICAL: Reset all state and storage before login
+            console.log('Completely resetting app state before login');
+
+            // Clear user state
+            setUser(null);
+
+            // Reset API client
+            delete api.defaults.headers.common['Authorization'];
+
+            // Clear ALL local data
+            const keys = ['token', 'userId', 'cartItems', 'userAvatar', 'isDarkMode'];
+            for (const key of keys) {
+                await AsyncStorage.removeItem(key);
+            }
+
+            console.log('All local storage cleared for fresh login');
+            console.log(`Attempting login for: ${email}`);
 
             // Make the login request
             const response = await api.post('/auth/login', {
@@ -59,21 +133,59 @@ export const AuthProvider = ({ children }) => {
                 console.log('Token stored successfully');
 
                 try {
+                    // Set new auth header
+                    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
                     // Get user data
                     const userResponse = await api.get('/auth/me', {
                         headers: {
                             'Authorization': `Bearer ${token}`
-                        },
-                        withCredentials: true
+                        }
                     });
 
-                    console.log('User data:', userResponse.data);
+                    console.log('User data fetched successfully:', userResponse.data.name);
 
-                    // Store token in user object for easy access
+                    // Save user ID
+                    if (userResponse.data && userResponse.data._id) {
+                        await AsyncStorage.setItem('userId', userResponse.data._id);
+                        console.log('User ID stored in AsyncStorage:', userResponse.data._id);
+                    }
+
+                    // Store user in state
                     setUser({
                         ...userResponse.data,
                         token: token
                     });
+
+                    // Explicitly fetch the cart for this user
+                    try {
+                        console.log(`Fetching cart data for user ${userResponse.data._id} after login`);
+                        const cartResponse = await api.get(`/auth/cart/${userResponse.data._id}`);
+
+                        if (cartResponse.data && cartResponse.data.cart) {
+                            console.log('Cart data after login:', cartResponse.data.cart);
+                            // Save cart data to AsyncStorage
+                            await AsyncStorage.setItem('cartItems', JSON.stringify(cartResponse.data.cart));
+
+                            // Important: Make sure the cart is available in memory immediately
+                            // This ensures the cart is visible without waiting for the next render cycle
+                            if (global.shopContextRef && global.shopContextRef.current) {
+                                console.log('Directly updating ShopContext cart data');
+                                global.shopContextRef.current.setCartItems(cartResponse.data.cart);
+                            }
+                        } else {
+                            console.log('No cart data found for user, initializing empty cart');
+                            await AsyncStorage.setItem('cartItems', JSON.stringify([]));
+                        }
+                    } catch (cartError) {
+                        console.error('Error fetching cart after login:', cartError);
+                        await AsyncStorage.setItem('cartItems', JSON.stringify([]));
+                    }
+
+                    // Trigger app refresh to reload all components
+                    console.log('Login successful - triggering app refresh');
+                    await AsyncStorage.setItem('triggerAppRefresh', 'true');
+
                 } catch (userError) {
                     console.error('Error fetching user data:', userError);
 
@@ -206,16 +318,57 @@ export const AuthProvider = ({ children }) => {
     const logout = async () => {
         setIsLoading(true);
         try {
-            await api.get('/auth/logout');
-            await AsyncStorage.removeItem('token');
-            await AsyncStorage.removeItem('cartItems');
+            // Get the current user info for logging
+            const currentUserId = user?._id || await AsyncStorage.getItem('userId');
+            const currentUserName = user?.name || 'unknown';
+            console.log(`Logging out user: ${currentUserName} (${currentUserId})`);
+
+            // Step 1: Call the backend logout endpoint
+            try {
+                await api.get('/auth/logout');
+                console.log('Backend logout successful');
+            } catch (logoutError) {
+                console.error('Backend logout failed:', logoutError);
+                // Continue with local logout even if backend fails
+            }
+
+            // Step 2: Clear all auth headers
+            delete api.defaults.headers.common['Authorization'];
+
+            // Step 3: Clear ALL local storage data
+            const keys = [
+                'token',
+                'userId',
+                'cartItems',
+                'userAvatar',
+                'isDarkMode',
+                // Add any other keys that might be used
+            ];
+
+            for (const key of keys) {
+                await AsyncStorage.removeItem(key);
+                console.log(`Cleared ${key} from AsyncStorage`);
+            }
+
+            // Step 4: Reset all state
             setUser(null);
+
+            console.log('Logout completed successfully - all data cleared');
         } catch (error) {
             console.error('Logout error:', error);
-            // Even if the logout API fails, clear local storage and user state
-            await AsyncStorage.removeItem('token');
-            await AsyncStorage.removeItem('cartItems');
-            setUser(null);
+
+            // Force cleanup even on error
+            try {
+                delete api.defaults.headers.common['Authorization'];
+                await AsyncStorage.removeItem('token');
+                await AsyncStorage.removeItem('userId');
+                await AsyncStorage.removeItem('cartItems');
+                await AsyncStorage.removeItem('userAvatar');
+                setUser(null);
+                console.log('Forced cleanup completed after logout error');
+            } catch (cleanupError) {
+                console.error('Even cleanup failed:', cleanupError);
+            }
         } finally {
             setIsLoading(false);
         }

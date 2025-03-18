@@ -120,11 +120,35 @@ const MyOrdersScreen = ({ navigation }) => {
         console.log('Rendering order:', item._id);
         console.log('Order items:', item.items);
 
+        // Helper function to get image source
+        const getImageSource = (product) => {
+            if (!product || !product.image) {
+                return { uri: 'https://via.placeholder.com/150' }; // Default placeholder
+            }
+
+            // Handle if image is an array
+            if (Array.isArray(product.image)) {
+                return {
+                    uri: product.image[0] && typeof product.image[0] === 'string'
+                        ? product.image[0]
+                        : 'https://via.placeholder.com/150'
+                };
+            }
+
+            // Handle if image is a string
+            if (typeof product.image === 'string') {
+                return { uri: product.image };
+            }
+
+            // Default fallback
+            return { uri: 'https://via.placeholder.com/150' };
+        };
+
         return (
             <View style={[styles.orderCard, { backgroundColor: COLORS.white }]}>
                 <View style={styles.orderHeader}>
-                    <View>
-                        <Text style={[styles.orderId, { color: COLORS.secondary }]}>
+                    <View style={{ flex: 1, marginRight: 10 }}>
+                        <Text style={[styles.orderId, { color: COLORS.secondary }]} numberOfLines={1} ellipsizeMode="middle">
                             Order ID: {item._id}
                         </Text>
                         <Text style={[styles.orderDate, { color: COLORS.gray }]}>
@@ -163,8 +187,15 @@ const MyOrdersScreen = ({ navigation }) => {
 
                         return (
                             <View key={index} style={styles.orderItemRow}>
+                                {product && (
+                                    <Image
+                                        source={getImageSource(product)}
+                                        style={styles.productImage}
+                                        resizeMode="cover"
+                                    />
+                                )}
                                 <View style={styles.productInfo}>
-                                    <Text style={[styles.productName, { color: COLORS.secondary }]} numberOfLines={1}>
+                                    <Text style={[styles.productName, { color: COLORS.secondary }]} numberOfLines={1} ellipsizeMode="tail">
                                         {product ? product.name :
                                             orderItem.productId?.name ||
                                             'Product'}
@@ -203,7 +234,7 @@ const MyOrdersScreen = ({ navigation }) => {
                     <Text style={[styles.addressLabel, { color: COLORS.secondary }]}>
                         Delivery Address:
                     </Text>
-                    <Text style={[styles.addressText, { color: COLORS.gray }]}>
+                    <Text style={[styles.addressText, { color: COLORS.gray }]} numberOfLines={2}>
                         {item.address}
                     </Text>
                     <Text style={[styles.pincodeText, { color: COLORS.gray }]}>
@@ -293,6 +324,9 @@ const MyOrdersScreen = ({ navigation }) => {
                     keyExtractor={item => item._id}
                     contentContainerStyle={styles.ordersList}
                     showsVerticalScrollIndicator={false}
+                    initialNumToRender={5}
+                    maxToRenderPerBatch={10}
+                    windowSize={10}
                 />
             )}
         </View>
@@ -365,6 +399,7 @@ const styles = StyleSheet.create({
     },
     ordersList: {
         padding: 15,
+        paddingBottom: 30,
     },
     orderCard: {
         borderRadius: 10,
@@ -388,6 +423,8 @@ const styles = StyleSheet.create({
     orderId: {
         fontSize: 14,
         fontWeight: 'bold',
+        flexShrink: 1,
+        width: '70%', // Limit width to prevent overflow
     },
     orderDate: {
         fontSize: 12,
@@ -399,6 +436,8 @@ const styles = StyleSheet.create({
         paddingVertical: 5,
         paddingHorizontal: 10,
         borderRadius: 15,
+        minWidth: 80, // Ensure minimum width for status badge
+        justifyContent: 'center',
     },
     statusIcon: {
         marginRight: 5,
@@ -416,6 +455,13 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: 10,
     },
+    productImage: {
+        width: 50,
+        height: 50,
+        borderRadius: 8,
+        marginRight: 10,
+        backgroundColor: '#f5f5f5',
+    },
     productInfo: {
         flex: 1,
         marginRight: 10,
@@ -423,6 +469,7 @@ const styles = StyleSheet.create({
     productName: {
         fontSize: 14,
         fontWeight: '500',
+        flexShrink: 1,
     },
     productQuantity: {
         fontSize: 12,
@@ -431,6 +478,8 @@ const styles = StyleSheet.create({
     productPrice: {
         fontSize: 14,
         fontWeight: 'bold',
+        minWidth: 70, // Ensure consistent width for price
+        textAlign: 'right',
     },
     divider: {
         height: 1,
@@ -447,6 +496,7 @@ const styles = StyleSheet.create({
     totalContainer: {
         flexDirection: 'row',
         alignItems: 'center',
+        flexWrap: 'wrap', // Allow wrapping on smaller screens
     },
     totalLabel: {
         fontSize: 14,
@@ -471,6 +521,7 @@ const styles = StyleSheet.create({
     },
     addressText: {
         fontSize: 12,
+        flexWrap: 'wrap', // Allow text to wrap
     },
     pincodeText: {
         fontSize: 12,

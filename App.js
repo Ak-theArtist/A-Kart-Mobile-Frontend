@@ -5,6 +5,7 @@ import { AuthProvider } from './src/context/AuthContext';
 import ShopContextProvider from './src/context/ShopContext';
 import ThemeProvider from './src/context/ThemeContext';
 import AppNavigator from './src/navigation/AppNavigator';
+import AppRefresher from './src/components/AppRefresher';
 
 export default function App() {
     return (
@@ -13,7 +14,9 @@ export default function App() {
             <AuthProvider>
                 <ShopContextProvider>
                     <ThemeProvider>
-                        <AppNavigator />
+                        <AppRefresher>
+                            <AppNavigator />
+                        </AppRefresher>
                     </ThemeProvider>
                 </ShopContextProvider>
             </AuthProvider>

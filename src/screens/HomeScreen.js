@@ -9,61 +9,40 @@ import {
     FlatList,
     ActivityIndicator,
     Alert,
-    Animated,
     Platform,
     RefreshControl,
-    Pressable
+    Pressable,
+    useWindowDimensions
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ShopContext } from '../context/ShopContext';
 import { ThemeContext } from '../context/ThemeContext';
+import { AuthContext } from '../context/AuthContext';
 import Header from '../components/Header';
 import Carousel from '../components/Carousel';
+import SmallCarousel from '../components/SmallCarousel';
 import ProductCard from '../components/ProductCard';
 import Footer from '../components/Footer';
 import { SIZES } from '../constants/theme';
 
-const ProductSkeleton = () => {
-    const pulseAnim = useRef(new Animated.Value(0.3)).current;
-
-    useEffect(() => {
-        Animated.loop(
-            Animated.sequence([
-                Animated.timing(pulseAnim, {
-                    toValue: 1,
-                    duration: 1000,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(pulseAnim, {
-                    toValue: 0.3,
-                    duration: 1000,
-                    useNativeDriver: true,
-                })
-            ])
-        ).start();
-    }, []);
-
-    return (
-        <Animated.View style={[styles.skeletonContainer, { opacity: pulseAnim }]} />
-    );
-};
-
 const HomeScreen = ({ navigation }) => {
-    const { allProduct, fetchProducts } = useContext(ShopContext);
+    const { allProduct, fetchProducts, refreshCart } = useContext(ShopContext);
+    const { user } = useContext(AuthContext);
     const { colors } = useContext(ThemeContext);
-    const scrollY = new Animated.Value(0);
+    const { width } = useWindowDimensions();
     const [refreshing, setRefreshing] = useState(false);
     const [loading, setLoading] = useState(true);
-    const fadeAnim = useRef(new Animated.Value(0)).current;
-    const searchButtonAnim = useRef(new Animated.Value(0)).current;
     const lastScrollY = useRef(0);
 
     const onRefresh = async () => {
         setRefreshing(true);
         try {
             await fetchProducts();
+            if (user) {
+                await refreshCart();
+            }
         } catch (error) {
-            console.error('Error refreshing products:', error);
+            console.error('Error refreshing data:', error);
         }
         setRefreshing(false);
     };
@@ -73,24 +52,54 @@ const HomeScreen = ({ navigation }) => {
             setLoading(true);
             try {
                 await fetchProducts();
+                if (user) {
+                    // Ensure cart data is loaded when the screen loads
+                    console.log('HomeScreen: Loading cart data for user');
+                    await refreshCart();
+                }
             } catch (error) {
-                console.error('Error loading products:', error);
+                console.error('Error loading data:', error);
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
-            Animated.timing(fadeAnim, {
-                toValue: 1,
-                duration: 500,
-                useNativeDriver: true,
-            }).start();
         };
+
         loadData();
-    }, []);
+    }, [user?._id]); // Re-fetch whenever the user changes
+
+    // Sort products to show latest first (assuming newer products have higher IDs or more recent createdAt dates)
+    const sortProductsByLatest = (products) => {
+        if (!products) return [];
+
+        return [...products].sort((a, b) => {
+            // If products have createdAt field, use that for sorting
+            if (a.createdAt && b.createdAt) {
+                return new Date(b.createdAt) - new Date(a.createdAt);
+            }
+
+            // If products have _id that looks like MongoDB ObjectId (which contains timestamp)
+            // More recent ObjectIds will be "greater" when compared as strings
+            if (a._id && b._id) {
+                return b._id.localeCompare(a._id);
+            }
+
+            // Fallback to regular id if available
+            if (a.id && b.id) {
+                return b.id - a.id;
+            }
+
+            // If no sortable fields, maintain original order
+            return 0;
+        });
+    };
 
     // Featured products (first 4 products)
     const featuredProducts = allProduct && allProduct.length > 0 ? allProduct.slice(0, 4) : [];
 
-    // New arrivals (last 4 products)
-    const newArrivals = allProduct && allProduct.length > 0 ? allProduct.slice(-4) : [];
+    // New arrivals (latest 10 products)
+    const newArrivals = allProduct && allProduct.length > 0
+        ? sortProductsByLatest(allProduct).slice(0, 10)
+        : [];
 
     // Men's products
     const mensProducts = allProduct && allProduct.length > 0
@@ -112,20 +121,33 @@ const HomeScreen = ({ navigation }) => {
         {
             id: '1',
             image: require('../../public/assets/Banner1.jpeg'),
-            title: 'Summer Sale',
-            description: 'Up to 50% off on all products',
+            title: 'SUMMER SALE',
         },
         {
             id: '2',
             image: require('../../public/assets/Banner2.jpeg'),
-            title: 'New Arrivals',
-            description: 'Check out our latest products',
+            title: 'NEW ARRIVALS',
         },
         {
             id: '3',
             image: require('../../public/assets/Banner3.jpg'),
-            title: 'Buy One Get One',
-            description: 'Buy one get one free',
+            title: 'BUY 1 GET 1',
+        }
+    ];
+
+    // Second carousel data
+    const secondCarouselData = [
+        {
+            id: '1',
+            image: require('../../public/assets/Carousel2/banner_mens.png'),
+        },
+        {
+            id: '2',
+            image: require('../../public/assets/Carousel2/banner_women.png'),
+        },
+        {
+            id: '3',
+            image: require('../../public/assets/Carousel2/banner_kids.png'),
         }
     ];
 
@@ -155,35 +177,25 @@ const HomeScreen = ({ navigation }) => {
     );
 
     const renderProductItem = ({ item }) => (
-        <TouchableOpacity
-            style={[
-                styles.productCardContainer,
-                {
-                    transform: [{
-                        scale: scrollY.interpolate({
-                            inputRange: [0, 100],
-                            outputRange: [1, 0.95],
-                            extrapolate: 'clamp',
-                        })
-                    }],
-                    opacity: fadeAnim,
-                }
-            ]}
-            onPress={() => navigation.navigate('Product', { product: item })}
-            activeOpacity={0.8}
-        >
-            <ProductCard product={item} />
-        </TouchableOpacity>
+        <View style={[styles.productCardContainer, { width: width * 0.42 }]}>
+            <TouchableOpacity
+                onPress={() => navigation.navigate('Product', { product: item })}
+                activeOpacity={0.8}
+                style={{ width: '100%' }}
+            >
+                <ProductCard product={item} />
+            </TouchableOpacity>
+        </View>
     );
 
     const renderProductSection = (title, products, category) => {
         if (loading) {
             return (
-                <View style={styles.sectionContainer}>
+                <View style={[styles.sectionContainer, { backgroundColor: colors.white }]}>
                     {renderSectionHeader(title, () => { })}
                     <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                         {[1, 2, 3, 4].map((_, index) => (
-                            <ProductSkeleton key={index} />
+                            <View key={index} style={[styles.skeletonContainer, { backgroundColor: colors.lightGray }]} />
                         ))}
                     </ScrollView>
                 </View>
@@ -193,7 +205,7 @@ const HomeScreen = ({ navigation }) => {
         if (!products || products.length === 0) return null;
 
         return (
-            <View style={styles.sectionContainer}>
+            <View style={[styles.sectionContainer, { backgroundColor: colors.white }]}>
                 {renderSectionHeader(title, () => navigation.navigate('Shop', { category }))}
                 <FlatList
                     data={products}
@@ -207,34 +219,15 @@ const HomeScreen = ({ navigation }) => {
         );
     };
 
-    const handleScroll = Animated.event(
-        [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-        {
-            useNativeDriver: true,
-            listener: ({ nativeEvent }) => {
-                const currentScrollY = nativeEvent.contentOffset.y;
-                if (currentScrollY > lastScrollY.current && currentScrollY > 100) {
-                    // Scrolling down - hide button
-                    Animated.spring(searchButtonAnim, {
-                        toValue: 1,
-                        useNativeDriver: true,
-                    }).start();
-                } else {
-                    // Scrolling up - show button
-                    Animated.spring(searchButtonAnim, {
-                        toValue: 0,
-                        useNativeDriver: true,
-                    }).start();
-                }
-                lastScrollY.current = currentScrollY;
-            }
-        }
-    );
+    const handleScroll = ({ nativeEvent }) => {
+        const currentScrollY = nativeEvent.contentOffset.y;
+        lastScrollY.current = currentScrollY;
+    };
 
     return (
         <View style={[styles.container, { backgroundColor: colors.background }]}>
             <Header title="A-Kart" />
-            <Animated.ScrollView
+            <ScrollView
                 showsVerticalScrollIndicator={false}
                 onScroll={handleScroll}
                 scrollEventThrottle={16}
@@ -257,28 +250,20 @@ const HomeScreen = ({ navigation }) => {
                 {renderProductSection("Women's Collection", womensProducts, 'women')}
                 {renderProductSection("Kid's Collection", kidsProducts, 'kids')}
                 {renderProductSection("Featured Products", featuredProducts, 'all')}
+
+                {/* Second Carousel */}
+                <View style={styles.smallCarouselContainer}>
+                    <SmallCarousel data={secondCarouselData} height={120} />
+                </View>
+
                 {renderProductSection("New Arrivals", newArrivals, 'all')}
 
                 {/* Footer */}
                 <Footer />
-            </Animated.ScrollView>
+            </ScrollView>
 
-            {/* Floating Search Button */}
-            <Animated.View
-                style={[
-                    styles.floatingButton,
-                    {
-                        transform: [
-                            {
-                                translateY: searchButtonAnim.interpolate({
-                                    inputRange: [0, 1],
-                                    outputRange: [0, 100]
-                                })
-                            }
-                        ]
-                    }
-                ]}
-            >
+            {/* Floating Info Button */}
+            <View style={styles.floatingButton}>
                 <TouchableOpacity
                     style={[
                         styles.searchButton,
@@ -289,7 +274,7 @@ const HomeScreen = ({ navigation }) => {
                 >
                     <Ionicons name="information-circle" size={24} color="white" />
                 </TouchableOpacity>
-            </Animated.View>
+            </View>
         </View>
     );
 };
@@ -312,16 +297,29 @@ const styles = StyleSheet.create({
             },
         }),
     },
-    sectionContainer: {
+    smallCarouselContainer: {
         marginVertical: 15,
-        paddingVertical: 10,
-        backgroundColor: '#fff',
         ...Platform.select({
             ios: {
                 shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
+                shadowOffset: { width: 0, height: 1 },
                 shadowOpacity: 0.1,
-                shadowRadius: 4,
+                shadowRadius: 2,
+            },
+            android: {
+                elevation: 2,
+            },
+        }),
+    },
+    sectionContainer: {
+        marginVertical: 15,
+        paddingVertical: 10,
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.1,
+                shadowRadius: 2,
             },
             android: {
                 elevation: 2,
@@ -365,21 +363,15 @@ const styles = StyleSheet.create({
     },
     productCardContainer: {
         margin: 5,
-        ...Platform.select({
-            ios: {
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.1,
-                shadowRadius: 4,
-            },
-            android: {
-                elevation: 3,
-            },
-        }),
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: 10,
+        overflow: 'hidden',
     },
     productsList: {
-        paddingHorizontal: 10,
+        paddingHorizontal: 8,
         paddingBottom: 5,
+        paddingTop: 5,
     },
     productList: {
         paddingHorizontal: 10,
@@ -390,18 +382,7 @@ const styles = StyleSheet.create({
         height: 220,
         backgroundColor: '#E1E9EE',
         borderRadius: 8,
-        margin: 10,
-        ...Platform.select({
-            ios: {
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.1,
-                shadowRadius: 4,
-            },
-            android: {
-                elevation: 3,
-            },
-        }),
+        margin: 10
     },
     floatingButton: {
         position: 'absolute',

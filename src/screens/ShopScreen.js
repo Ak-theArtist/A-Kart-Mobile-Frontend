@@ -7,7 +7,8 @@ import {
     TouchableOpacity,
     FlatList,
     ActivityIndicator,
-    Alert
+    Alert,
+    useWindowDimensions
 } from 'react-native';
 import { ShopContext } from '../context/ShopContext';
 import { ThemeContext } from '../context/ThemeContext';
@@ -18,6 +19,7 @@ import { SIZES } from '../constants/theme';
 const ShopScreen = ({ navigation, route }) => {
     const { allProduct, isLoading, error, fetchProducts } = useContext(ShopContext);
     const { colors } = useContext(ThemeContext);
+    const { width } = useWindowDimensions();
 
     // Get category from route params if available
     const categoryFromRoute = route.params?.category;
@@ -63,9 +65,42 @@ const ShopScreen = ({ navigation, route }) => {
         { id: 'kids', name: "Kid's" }
     ];
 
-    const filteredProducts = selectedCategory === 'all'
-        ? allProduct
-        : allProduct?.filter(product => product.category === selectedCategory);
+    // Sort products to show latest first (assuming newer products have higher IDs or more recent createdAt dates)
+    const sortProductsByLatest = (products) => {
+        if (!products) return [];
+
+        return [...products].sort((a, b) => {
+            // If products have createdAt field, use that for sorting
+            if (a.createdAt && b.createdAt) {
+                return new Date(b.createdAt) - new Date(a.createdAt);
+            }
+
+            // If products have _id that looks like MongoDB ObjectId (which contains timestamp)
+            // More recent ObjectIds will be "greater" when compared as strings
+            if (a._id && b._id) {
+                return b._id.localeCompare(a._id);
+            }
+
+            // Fallback to regular id if available
+            if (a.id && b.id) {
+                return b.id - a.id;
+            }
+
+            // If no sortable fields, maintain original order
+            return 0;
+        });
+    };
+
+    // Filter and sort products
+    const getFilteredAndSortedProducts = () => {
+        let filtered = selectedCategory === 'all'
+            ? allProduct
+            : allProduct?.filter(product => product.category === selectedCategory);
+
+        return sortProductsByLatest(filtered);
+    };
+
+    const filteredProducts = getFilteredAndSortedProducts();
 
     if (isLoading || localLoading) {
         return (
@@ -103,49 +138,63 @@ const ShopScreen = ({ navigation, route }) => {
         <View style={[styles.container, { backgroundColor: colors.background }]}>
             <Header title="Shop" />
 
-            <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.categoriesContainer}
-                style={{ backgroundColor: colors.background }}
-            >
-                {categories.map(item => (
-                    <TouchableOpacity
-                        key={item.id}
-                        style={[
-                            styles.categoryButton,
-                            {
-                                backgroundColor: selectedCategory === item.id ? colors.primary : colors.white,
-                                borderColor: colors.primary,
-                                borderWidth: selectedCategory === item.id ? 2 : 1.5
-                            }
-                        ]}
-                        onPress={() => setSelectedCategory(item.id)}
-                    >
-                        <Text style={[
-                            styles.categoryText,
-                            selectedCategory === item.id
-                                ? { color: colors.white }
-                                : { color: colors.primary }
-                        ]}>
-                            {item.name}
-                        </Text>
-                    </TouchableOpacity>
-                ))}
-            </ScrollView>
+            <View style={[styles.categoriesWrapper, { backgroundColor: colors.background }]}>
+                <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={[styles.categoriesContainer, { paddingHorizontal: 10 }]}
+                    style={{ backgroundColor: colors.background }}
+                >
+                    {categories.map(item => (
+                        <TouchableOpacity
+                            key={item.id}
+                            style={[
+                                styles.categoryButton,
+                                {
+                                    backgroundColor: selectedCategory === item.id ? colors.primary : colors.white,
+                                    borderColor: colors.primary,
+                                    borderWidth: selectedCategory === item.id ? 2 : 1.5,
+                                    minWidth: width / 6,
+                                    paddingHorizontal: width < 350 ? 12 : 20,
+                                }
+                            ]}
+                            onPress={() => setSelectedCategory(item.id)}
+                        >
+                            <Text style={[
+                                styles.categoryText,
+                                selectedCategory === item.id
+                                    ? { color: colors.white }
+                                    : { color: colors.primary },
+                                { fontSize: width < 350 ? 14 : 16 }
+                            ]}>
+                                {item.name}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </ScrollView>
+            </View>
 
             <FlatList
                 data={filteredProducts}
                 renderItem={({ item }) => (
-                    <ProductCard
-                        product={item}
-                        onPress={() => navigation.navigate('Product', { product: item })}
-                    />
+                    <View style={[
+                        styles.productCardWrapper,
+                        {
+                            width: (width - 48) / 2,
+                            maxWidth: 170
+                        }
+                    ]}>
+                        <ProductCard
+                            product={item}
+                            onPress={() => navigation.navigate('Product', { product: item })}
+                        />
+                    </View>
                 )}
                 keyExtractor={item => (item._id || item.id || Math.random().toString()).toString()}
                 numColumns={2}
                 contentContainerStyle={styles.productsContainer}
                 showsVerticalScrollIndicator={false}
+                columnWrapperStyle={styles.columnWrapper}
                 ListEmptyComponent={
                     <View style={styles.emptyContainer}>
                         <Text style={[styles.emptyText, { color: colors.secondary }]}>
@@ -178,37 +227,46 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginTop: 10,
     },
-    categoriesContainer: {
-        flex: 1,
-        marginBottom: 10,
+    categoriesWrapper: {
         alignItems: 'center',
         justifyContent: 'center',
-        height: 80,
+    },
+    categoriesContainer: {
+        marginBottom: 8,
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: 70,
     },
     categoryButton: {
-        paddingHorizontal: 20,
-        paddingVertical: 12,
+        paddingVertical: 10,
         borderRadius: 25,
-        marginRight: 12,
+        marginRight: 10,
         borderWidth: 1.5,
         alignItems: 'center',
         shadowColor: '#000',
         shadowOffset: {
             width: 0,
-            height: 2,
+            height: 1,
         },
         shadowOpacity: 0.1,
-        shadowRadius: 3,
-        elevation: 3,
+        shadowRadius: 2,
+        elevation: 2,
     },
     categoryText: {
         fontWeight: 'bold',
-        fontSize: 16,
-        textShadowRadius: 1,
+        textShadowRadius: 0.5,
     },
     productsContainer: {
-        // marginTop: 20,
-        padding: 10,
+        padding: 12,
+        alignItems: 'center',
+    },
+    productCardWrapper: {
+        margin: 6,
+        alignItems: 'center',
+    },
+    columnWrapper: {
+        justifyContent: 'center',
+        marginHorizontal: 6,
     },
     errorContainer: {
         flex: 1,

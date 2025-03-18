@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext, useEffect, useRef } from 'react';
 import {
     View,
     Text,
@@ -50,6 +50,9 @@ const ManageAddressScreen = ({ navigation }) => {
     const [newPincode, setNewPincode] = useState('');
     const [validationErrors, setValidationErrors] = useState({});
     const [hasChanges, setHasChanges] = useState(false);
+
+    // Reference for pincode input field
+    const pincodeInputRef = useRef(null);
 
     useEffect(() => {
         if (user && user._id) {
@@ -202,6 +205,29 @@ const ManageAddressScreen = ({ navigation }) => {
     };
 
     const handleSaveChanges = async () => {
+        // Check if there are addresses without pincodes
+        if (addresses.length > pincodes.length) {
+            Alert.alert(
+                'Missing Pincode',
+                'Pincode is necessary for making an order. Please add a pincode for each address.',
+                [
+                    {
+                        text: 'OK',
+                        onPress: () => {
+                            setIsAddingPincode(true);
+                            // Focus on the pincode input field
+                            setTimeout(() => {
+                                if (pincodeInputRef.current) {
+                                    pincodeInputRef.current.focus();
+                                }
+                            }, 500);
+                        }
+                    }
+                ]
+            );
+            return;
+        }
+
         setIsLoading(true);
         try {
             console.log('Saving addresses and pincodes:');
@@ -440,6 +466,7 @@ const ManageAddressScreen = ({ navigation }) => {
                     {isAddingPincode && (
                         <View style={styles.addNewContainer}>
                             <TextInput
+                                ref={pincodeInputRef}
                                 style={[
                                     styles.input,
                                     {

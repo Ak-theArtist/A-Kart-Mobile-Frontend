@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AppState } from 'react-native';
 
 // Fixed colors for light and dark modes
 export const COLORS = {
@@ -16,10 +17,12 @@ export const COLORS = {
 };
 
 export const DARK_COLORS = {
-    primary: 'rgb(9, 64, 147)', // Blue
+    primary: 'rgb(42, 116, 226)', // Brighter blue for better contrast with dark backgrounds
+    primaryAlt: 'rgb(80, 150, 255)', // Even brighter blue for special elements
     secondary: '#f5f5f5',
     background: '#121212',
     white: '#1e1e1e',
+    cardBackground: '#242424', // Slightly lighter than white for card backgrounds
     black: '#ffffff',
     gray: '#bbbbbb',
     lightGray: '#333333',
@@ -32,6 +35,7 @@ export const DARK_COLORS = {
 export const ThemeContext = createContext({
     isDarkMode: false,
     toggleDarkMode: () => { },
+    resetTheme: () => { },
     colors: COLORS
 });
 
@@ -55,6 +59,23 @@ export const ThemeProvider = ({ children }) => {
         };
 
         loadDarkModePreference();
+
+        // Set up a listener for when the app comes back into focus
+        // This ensures the theme is updated if isDarkMode was changed externally (like during logout)
+        const focusListener = () => {
+            loadDarkModePreference();
+        };
+
+        // Subscribe to app state changes
+        const appStateListener = AppState.addEventListener('change', (nextAppState) => {
+            if (nextAppState === 'active') {
+                focusListener();
+            }
+        });
+
+        return () => {
+            appStateListener.remove();
+        };
     }, []);
 
     // Save dark mode preference when it changes
@@ -76,9 +97,15 @@ export const ThemeProvider = ({ children }) => {
         setIsDarkMode(prev => !prev);
     };
 
+    // Reset to light theme
+    const resetTheme = () => {
+        setIsDarkMode(false);
+    };
+
     const value = {
         isDarkMode,
         toggleDarkMode,
+        resetTheme,
         colors
     };
 

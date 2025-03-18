@@ -14,15 +14,18 @@ import {
 import { AuthContext } from '../context/AuthContext';
 import { ThemeContext } from '../context/ThemeContext';
 import { SIZES } from '../constants/theme';
+import { Ionicons } from '@expo/vector-icons';
 
 const RegisterScreen = ({ navigation }) => {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [error, setError] = useState('');
     const { register, isLoading } = useContext(AuthContext);
-    const { colors } = useContext(ThemeContext);
+    const { colors, isDarkMode } = useContext(ThemeContext);
 
     const handleRegister = async () => {
         // Reset error
@@ -49,6 +52,11 @@ const RegisterScreen = ({ navigation }) => {
         }
     };
 
+    // Choose the appropriate logo based on dark mode
+    const logoSource = isDarkMode
+        ? require('../../public/assets/logo_dark.jpg')
+        : require('../../public/assets/logo.jpg');
+
     return (
         <KeyboardAvoidingView
             style={[styles.container, { backgroundColor: colors.background }]}
@@ -61,7 +69,7 @@ const RegisterScreen = ({ navigation }) => {
             >
                 <View style={styles.logoContainer}>
                     <Image
-                        source={require('../../public/assets/logo.jpg')}
+                        source={logoSource}
                         style={styles.logo}
                         resizeMode="contain"
                     />
@@ -71,20 +79,36 @@ const RegisterScreen = ({ navigation }) => {
 
                 <View style={styles.formContainer}>
                     {/* Name Input */}
-                    <View style={[styles.inputContainer, { borderColor: colors.lightGray }]}>
+                    <TouchableOpacity
+                        style={[styles.inputContainer, { borderColor: colors.lightGray }]}
+                        activeOpacity={0.8}
+                        onPress={() => {
+                            // Find the TextInput and focus it
+                            this.nameInput && this.nameInput.focus();
+                        }}
+                    >
                         <TextInput
-                            style={[styles.input, { color: colors.secondary }]}
+                            ref={(input) => { this.nameInput = input; }}
+                            style={[styles.input, { color: colors.secondary, flex: 1 }]}
                             placeholder="Full Name"
                             placeholderTextColor={colors.gray}
                             value={name}
                             onChangeText={setName}
                         />
-                    </View>
+                    </TouchableOpacity>
 
                     {/* Email Input */}
-                    <View style={[styles.inputContainer, { borderColor: colors.lightGray }]}>
+                    <TouchableOpacity
+                        style={[styles.inputContainer, { borderColor: colors.lightGray }]}
+                        activeOpacity={0.8}
+                        onPress={() => {
+                            // Find the TextInput and focus it
+                            this.emailInput && this.emailInput.focus();
+                        }}
+                    >
                         <TextInput
-                            style={[styles.input, { color: colors.secondary }]}
+                            ref={(input) => { this.emailInput = input; }}
+                            style={[styles.input, { color: colors.secondary, flex: 1 }]}
                             placeholder="Email"
                             placeholderTextColor={colors.gray}
                             keyboardType="email-address"
@@ -92,31 +116,67 @@ const RegisterScreen = ({ navigation }) => {
                             value={email}
                             onChangeText={setEmail}
                         />
-                    </View>
+                    </TouchableOpacity>
 
                     {/* Password Input */}
-                    <View style={[styles.inputContainer, { borderColor: colors.lightGray }]}>
+                    <TouchableOpacity
+                        style={[styles.inputContainer, { borderColor: colors.lightGray }]}
+                        activeOpacity={0.8}
+                        onPress={() => {
+                            // Find the TextInput and focus it
+                            this.passwordInput && this.passwordInput.focus();
+                        }}
+                    >
                         <TextInput
-                            style={[styles.input, { color: colors.secondary }]}
+                            ref={(input) => { this.passwordInput = input; }}
+                            style={[styles.input, { color: colors.secondary, flex: 1 }]}
                             placeholder="Password"
                             placeholderTextColor={colors.gray}
-                            secureTextEntry
+                            secureTextEntry={!showPassword}
                             value={password}
                             onChangeText={setPassword}
                         />
-                    </View>
+                        <TouchableOpacity
+                            style={styles.eyeIcon}
+                            onPress={() => setShowPassword(!showPassword)}
+                        >
+                            <Ionicons
+                                name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                                size={22}
+                                color={colors.gray}
+                            />
+                        </TouchableOpacity>
+                    </TouchableOpacity>
 
                     {/* Confirm Password Input */}
-                    <View style={[styles.inputContainer, { borderColor: colors.lightGray }]}>
+                    <TouchableOpacity
+                        style={[styles.inputContainer, { borderColor: colors.lightGray }]}
+                        activeOpacity={0.8}
+                        onPress={() => {
+                            // Find the TextInput and focus it
+                            this.confirmPasswordInput && this.confirmPasswordInput.focus();
+                        }}
+                    >
                         <TextInput
-                            style={[styles.input, { color: colors.secondary }]}
+                            ref={(input) => { this.confirmPasswordInput = input; }}
+                            style={[styles.input, { color: colors.secondary, flex: 1 }]}
                             placeholder="Confirm Password"
                             placeholderTextColor={colors.gray}
-                            secureTextEntry
+                            secureTextEntry={!showConfirmPassword}
                             value={confirmPassword}
                             onChangeText={setConfirmPassword}
                         />
-                    </View>
+                        <TouchableOpacity
+                            style={styles.eyeIcon}
+                            onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                        >
+                            <Ionicons
+                                name={showConfirmPassword ? 'eye-outline' : 'eye-off-outline'}
+                                size={22}
+                                color={colors.gray}
+                            />
+                        </TouchableOpacity>
+                    </TouchableOpacity>
 
                     {/* Error Message */}
                     {error ? (
@@ -187,11 +247,18 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderRadius: 8,
         marginBottom: 15,
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     input: {
         paddingHorizontal: 15,
         paddingVertical: 12,
         fontSize: 16,
+    },
+    eyeIcon: {
+        padding: 10,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     errorText: {
         marginBottom: 15,

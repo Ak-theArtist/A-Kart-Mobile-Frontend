@@ -15,86 +15,88 @@ const DEFAULT_COLORS = {
 };
 
 const Footer = () => {
-    const { colors } = useContext(ThemeContext);
-
-    // Use colors directly from context or fallback to DEFAULT_COLORS
-    const COLORS = colors || DEFAULT_COLORS;
+    const { colors, isDarkMode } = useContext(ThemeContext);
     const currentYear = new Date().getFullYear();
 
     const openLink = (url) => {
         Linking.openURL(url);
     };
 
+    // Choose the appropriate logo based on dark mode
+    const logoSource = isDarkMode
+        ? require('../../public/assets/logo_dark.jpg')
+        : require('../../public/assets/logo.jpg');
+
     return (
-        <View style={[styles.container, { backgroundColor: COLORS.white }]}>
+        <View style={[styles.container, { backgroundColor: colors.white }]}>
             <View style={styles.topSection}>
                 <View style={styles.logoSection}>
                     <Image
-                        source={require('../../public/assets/logo.jpg')}
+                        source={logoSource}
                         style={styles.logoImage}
                         resizeMode="contain"
                     />
-                    <Text style={[styles.logoText, { color: COLORS.primary }]}>A-Kart</Text>
-                    <Text style={[styles.tagline, { color: COLORS.secondary }]}>
+                    <Text style={[styles.logoText, { color: colors.primary }]}>A-Kart</Text>
+                    <Text style={[styles.tagline, { color: colors.secondary }]}>
                         Shop with confidence
                     </Text>
                 </View>
 
                 <View style={styles.linksSection}>
                     <View style={styles.linkColumn}>
-                        <Text style={[styles.linkHeader, { color: COLORS.secondary }]}>Shop</Text>
+                        <Text style={[styles.linkHeader, { color: colors.secondary }]}>Shop</Text>
                         <TouchableOpacity>
-                            <Text style={[styles.linkText, { color: COLORS.gray }]}>Products</Text>
+                            <Text style={[styles.linkText, { color: colors.gray }]}>Products</Text>
                         </TouchableOpacity>
                         <TouchableOpacity>
-                            <Text style={[styles.linkText, { color: COLORS.gray }]}>Categories</Text>
+                            <Text style={[styles.linkText, { color: colors.gray }]}>Categories</Text>
                         </TouchableOpacity>
                         <TouchableOpacity>
-                            <Text style={[styles.linkText, { color: COLORS.gray }]}>Deals</Text>
+                            <Text style={[styles.linkText, { color: colors.gray }]}>Deals</Text>
                         </TouchableOpacity>
                     </View>
 
                     <View style={styles.linkColumn}>
-                        <Text style={[styles.linkHeader, { color: COLORS.secondary }]}>Support</Text>
+                        <Text style={[styles.linkHeader, { color: colors.secondary }]}>Support</Text>
                         <TouchableOpacity>
-                            <Text style={[styles.linkText, { color: COLORS.gray }]}>Contact Us</Text>
+                            <Text style={[styles.linkText, { color: colors.gray }]}>Contact Us</Text>
                         </TouchableOpacity>
                         <TouchableOpacity>
-                            <Text style={[styles.linkText, { color: COLORS.gray }]}>FAQs</Text>
+                            <Text style={[styles.linkText, { color: colors.gray }]}>FAQs</Text>
                         </TouchableOpacity>
                         <TouchableOpacity>
-                            <Text style={[styles.linkText, { color: COLORS.gray }]}>Shipping</Text>
+                            <Text style={[styles.linkText, { color: colors.gray }]}>Shipping</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
             </View>
 
-            <View style={[styles.divider, { backgroundColor: COLORS.lightGray }]} />
+            <View style={[styles.divider, { backgroundColor: colors.lightGray }]} />
 
             <View style={styles.bottomSection}>
                 <View style={styles.socialIcons}>
                     <TouchableOpacity style={styles.iconContainer}>
-                        <Ionicons name="logo-facebook" size={24} color={COLORS.primary} />
+                        <Ionicons name="logo-facebook" size={24} color={isDarkMode ? colors.primaryAlt : colors.primary} />
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.iconContainer}>
-                        <Ionicons name="logo-twitter" size={24} color={COLORS.primary} />
+                        <Ionicons name="logo-twitter" size={24} color={isDarkMode ? colors.primaryAlt : colors.primary} />
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.iconContainer}>
-                        <Ionicons name="logo-instagram" size={24} color={COLORS.primary} />
+                        <Ionicons name="logo-instagram" size={24} color={isDarkMode ? colors.primaryAlt : colors.primary} />
                     </TouchableOpacity>
                 </View>
 
                 <TouchableOpacity onPress={() => openLink('https://a-kart-frontend.onrender.com')}>
-                    <Text style={[styles.websiteLink, { color: COLORS.primary }]}>
+                    <Text style={[styles.websiteLink, { color: isDarkMode ? colors.primaryAlt : colors.primary }]}>
                         Official Website
                     </Text>
                 </TouchableOpacity>
 
-                <Text style={[styles.copyright, { color: COLORS.gray }]}>
+                <Text style={[styles.copyright, { color: colors.gray }]}>
                     © {currentYear} A-Kart. All rights reserved.
                 </Text>
 
-                <Text style={[styles.developer, { color: COLORS.primary }]}>
+                <Text style={[styles.developer, { color: isDarkMode ? colors.primaryAlt : colors.primary }]}>
                     Developed By - Akash Kumar
                 </Text>
             </View>

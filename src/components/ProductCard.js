@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -11,35 +11,41 @@ const PLACEHOLDER_IMAGE = 'https://via.placeholder.com/150';
 const ProductCard = ({ product, onPress }) => {
     const navigation = useNavigation();
     const { addToCart } = useContext(ShopContext);
-    const { colors } = useContext(ThemeContext);
+    const { colors, isDarkMode } = useContext(ThemeContext);
+    const [showSecondImage, setShowSecondImage] = useState(false);
 
     const handleAddToCart = () => {
         addToCart(product._id || product.id);
         Alert.alert('Success', 'Product added to cart!');
     };
 
-    // Safely get image URI
-    const getImageSource = () => {
+    // Get product images array
+    const getProductImages = () => {
         if (!product || !product.image) {
+            return [PLACEHOLDER_IMAGE];
+        }
+
+        if (Array.isArray(product.image)) {
+            return product.image.filter(img => typeof img === 'string');
+        }
+
+        return [product.image];
+    };
+
+    const productImages = getProductImages();
+
+    // Safely get image URI for display
+    const getImageSource = (index = 0) => {
+        if (productImages.length === 0) {
             return { uri: PLACEHOLDER_IMAGE };
         }
 
-        // Handle if image is an array
-        if (Array.isArray(product.image)) {
-            return {
-                uri: product.image[0] && typeof product.image[0] === 'string'
-                    ? product.image[0]
-                    : PLACEHOLDER_IMAGE
-            };
+        // If requesting second image but it doesn't exist, return first image
+        if (index > 0 && index >= productImages.length) {
+            return { uri: productImages[0] };
         }
 
-        // Handle if image is a string
-        if (typeof product.image === 'string') {
-            return { uri: product.image };
-        }
-
-        // Default fallback
-        return { uri: PLACEHOLDER_IMAGE };
+        return { uri: productImages[index] };
     };
 
     // Calculate discount percentage if both prices are available
@@ -53,21 +59,36 @@ const ProductCard = ({ product, onPress }) => {
 
     const discount = calculateDiscount();
 
+    // Use cardBackground in dark mode for better contrast
+    const cardBgColor = isDarkMode ? colors.cardBackground : colors.white;
+
     return (
         <TouchableOpacity
-            style={[styles.container, { backgroundColor: colors.white }]}
+            style={[
+                styles.container,
+                {
+                    backgroundColor: cardBgColor,
+                    shadowColor: isDarkMode ? '#000' : '#000',
+                    shadowOpacity: isDarkMode ? 0.25 : 0.1,
+                }
+            ]}
             onPress={onPress || (() => navigation.navigate('Product', { product }))}
+            onLongPress={() => setShowSecondImage(true)}
+            onPressOut={() => setShowSecondImage(false)}
+            delayLongPress={200}
             activeOpacity={0.8}
         >
-            <Image
-                source={getImageSource()}
-                style={styles.image}
-                resizeMode="cover"
-                contentPosition="top"
-            />
+            <View style={styles.imageContainer}>
+                <Image
+                    source={getImageSource(showSecondImage && productImages.length > 1 ? 1 : 0)}
+                    style={styles.image}
+                    resizeMode="cover"
+                    resizeMethod="resize"
+                />
+            </View>
 
             {discount > 0 && (
-                <View style={[styles.discountBadge, { backgroundColor: colors.primary }]}>
+                <View style={[styles.discountBadge, { backgroundColor: isDarkMode ? colors.primaryAlt : colors.primary }]}>
                     <Text style={[styles.discountText, { color: colors.white }]}>
                         {discount}% OFF
                     </Text>
@@ -80,7 +101,7 @@ const ProductCard = ({ product, onPress }) => {
                 </Text>
 
                 <View style={styles.priceContainer}>
-                    <Text style={[styles.price, { color: colors.primary }]}>
+                    <Text style={[styles.price, { color: isDarkMode ? colors.primaryAlt : colors.primary }]}>
                         ₹{product.new_price || product.price}
                     </Text>
 
@@ -91,27 +112,12 @@ const ProductCard = ({ product, onPress }) => {
                     )}
                 </View>
 
-                <View style={styles.ratingContainer}>
-                    {[1, 2, 3, 4, 5].map((star) => (
-                        <Ionicons
-                            key={star}
-                            name={star <= (product.rating || 0) ? 'star' : 'star-outline'}
-                            size={14}
-                            color={star <= (product.rating || 0) ? '#FFD700' : colors.gray}
-                            style={styles.starIcon}
-                        />
-                    ))}
-                    <Text style={[styles.ratingText, { color: colors.gray }]}>
-                        ({product.rating || 0})
-                    </Text>
-                </View>
-
                 <TouchableOpacity
-                    style={[styles.addButton, { backgroundColor: colors.primary }]}
+                    style={[styles.addButton, { backgroundColor: isDarkMode ? colors.primaryAlt : colors.primary }]}
                     onPress={handleAddToCart}
                 >
-                    <Ionicons name="cart-outline" size={16} color={colors.white} />
-                    <Text style={[styles.addButtonText, { color: colors.white }]}>Add</Text>
+                    <Ionicons name="cart-outline" size={16} color={isDarkMode ? '#121212' : colors.white} />
+                    <Text style={[styles.addButtonText, { color: isDarkMode ? '#121212' : colors.white }]}>Add</Text>
                 </TouchableOpacity>
             </View>
         </TouchableOpacity>
@@ -120,23 +126,34 @@ const ProductCard = ({ product, onPress }) => {
 
 const styles = StyleSheet.create({
     container: {
-        width: 170,
-        borderRadius: 12,
+        width: '100%',
+        borderRadius: 10,
         overflow: 'hidden',
-        marginHorizontal: 8,
-        marginBottom: 16,
+        marginHorizontal: 2,
+        marginBottom: 12,
         shadowColor: '#000',
         shadowOffset: {
             width: 0,
-            height: 3,
+            height: 1,
         },
-        shadowOpacity: 0.15,
-        shadowRadius: 5,
-        elevation: 6,
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+        elevation: 2,
+        alignItems: 'center',
+    },
+    imageContainer: {
+        width: '100%',
+        height: 170,
+        overflow: 'hidden',
+        borderTopLeftRadius: 10,
+        borderTopRightRadius: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     image: {
         width: '100%',
-        height: 160,
+        height: '100%',
+        resizeMode: 'cover',
     },
     discountBadge: {
         position: 'absolute',
@@ -151,18 +168,19 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     infoContainer: {
-        padding: 12,
+        padding: 10,
+        width: '100%',
     },
     name: {
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: '600',
-        marginBottom: 6,
-        height: 40,
+        marginBottom: 8,
+        height: 36,
     },
     priceContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 6,
+        marginBottom: 10,
     },
     price: {
         fontSize: 16,
@@ -173,24 +191,13 @@ const styles = StyleSheet.create({
         fontSize: 12,
         textDecorationLine: 'line-through',
     },
-    ratingContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 10,
-    },
-    starIcon: {
-        marginRight: 1,
-    },
-    ratingText: {
-        fontSize: 12,
-        marginLeft: 3,
-    },
     addButton: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         paddingVertical: 8,
         borderRadius: 6,
+        marginTop: 2,
     },
     addButtonText: {
         fontSize: 13,

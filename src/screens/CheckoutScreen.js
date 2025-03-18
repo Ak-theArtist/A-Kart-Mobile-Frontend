@@ -60,6 +60,21 @@ const CheckoutScreen = ({ navigation }) => {
     useEffect(() => {
         console.log('Cart items in checkout:', cartItems);
         console.log('All products in checkout:', allProduct);
+
+        // Debug product properties
+        if (allProduct && allProduct.length > 0) {
+            const sampleProduct = allProduct[0];
+            console.log('Sample product structure:', {
+                id: sampleProduct.id,
+                _id: sampleProduct._id,
+                name: sampleProduct.name,
+                price: sampleProduct.price,
+                new_price: sampleProduct.new_price,
+                newPrice: sampleProduct.newPrice,
+                image: sampleProduct.image ? 'Has image field' : 'No image field',
+                images: sampleProduct.images ? 'Has images field' : 'No images field'
+            });
+        }
     }, [cartItems, allProduct]);
 
     const fetchAddresses = async () => {
@@ -109,8 +124,37 @@ const CheckoutScreen = ({ navigation }) => {
             return;
         }
 
+        if (addresses.length === 0) {
+            Alert.alert(
+                'No Address Found',
+                'Please add address and pin first',
+                [
+                    {
+                        text: 'OK',
+                        onPress: () => navigation.navigate('Profile', { screen: 'ManageAddress' })
+                    }
+                ]
+            );
+            return;
+        }
+
         if (!selectedAddress) {
             Alert.alert('Error', 'Please select a delivery address');
+            return;
+        }
+
+        // Check if the selected address has a pincode
+        if (!selectedAddress.pincode || selectedAddress.pincode.trim() === '' || selectedAddress.pincode === '000000') {
+            Alert.alert(
+                'Missing Pincode',
+                'Please add a valid pincode for your delivery address',
+                [
+                    {
+                        text: 'OK',
+                        onPress: () => navigation.navigate('Profile', { screen: 'ManageAddress' })
+                    }
+                ]
+            );
             return;
         }
 
@@ -130,7 +174,7 @@ const CheckoutScreen = ({ navigation }) => {
             // Prepare order items
             const items = cartItems.map(item => {
                 // Use the productId directly from the cart item
-                const productId = item.productId || item.id;
+                const productId = item.productId || item.id || item.product;
 
                 // Find the product in allProduct array
                 const product = allProduct.find(p =>
@@ -249,52 +293,70 @@ const CheckoutScreen = ({ navigation }) => {
     };
 
     const renderCartItem = (item, index) => {
-        // Find the product in allProduct array using both _id and id fields
-        const productId = item.productId || item.id;
-        const product = allProduct.find(p =>
-            (p._id === productId || p.id === productId)
-        );
+        console.log('Rendering cart item:', item);
+        // Find the product in allProduct - the cart item uses productId field
+        const productId = item.productId || item.id || item.product;
+        let product = allProduct.find(p => p._id === productId || p.id === productId);
+        console.log('Found product:', product);
 
-        // Log for debugging
-        console.log(`Rendering cart item ${index}:`, item);
-        console.log(`Looking for product with ID: ${productId}`);
-        console.log(`Found product:`, product);
-
-        // If product not found, show basic info from cart item
         if (!product) {
+            console.log('Product not found in allProduct. Item:', item);
+            // Fall back to using cart item details
             return (
-                <View key={index} style={[styles.cartItem, { backgroundColor: COLORS.white }]}>
-                    <Text style={[styles.productName, { color: COLORS.secondary }]} numberOfLines={1}>
-                        {item.name || `Product ID: ${productId}`}
-                    </Text>
-                    <View style={styles.productDetails}>
-                        <Text style={[styles.productQuantity, { color: COLORS.gray }]}>
-                            Qty: {item.quantity}
+                <View style={[styles.cartItem, { backgroundColor: COLORS.white }]} key={index}>
+                    <View style={styles.productImageContainer}>
+                        <View style={styles.productPlaceholder}>
+                            <Ionicons name="cube-outline" size={24} color={COLORS.gray} />
+                        </View>
+                    </View>
+                    <View style={styles.productContent}>
+                        <Text style={[styles.productName, { color: COLORS.secondary }]} numberOfLines={1} ellipsizeMode="tail">
+                            {item.name || 'Unknown Product'}
                         </Text>
-                        <Text style={[styles.productPrice, { color: COLORS.primary }]}>
-                            ₹{item.price * item.quantity}
-                        </Text>
+                        <View style={styles.productDetails}>
+                            <Text style={[styles.productQuantity, { color: COLORS.gray }]}>Qty: {item.quantity}</Text>
+                            <Text style={[styles.productPrice, { color: COLORS.primary }]}>₹{item.price * item.quantity}</Text>
+                        </View>
                     </View>
                 </View>
             );
         }
 
-        // Calculate the price
-        const price = product.new_price || product.price || 0;
+        // Calculate total price - handling different field names
+        const price = product.new_price || product.newPrice || product.price || 0;
         const totalPrice = price * item.quantity;
 
+        // Get product image - handling different field structures
+        let productImage = null;
+        if (product.image) {
+            productImage = Array.isArray(product.image) ? product.image[0] : product.image;
+        } else if (product.images && product.images.length > 0) {
+            productImage = Array.isArray(product.images) ? product.images[0] : product.images;
+        }
+
         return (
-            <View key={index} style={[styles.cartItem, { backgroundColor: COLORS.white }]}>
-                <Text style={[styles.productName, { color: COLORS.secondary }]} numberOfLines={1}>
-                    {product.name}
-                </Text>
-                <View style={styles.productDetails}>
-                    <Text style={[styles.productQuantity, { color: COLORS.gray }]}>
-                        Qty: {item.quantity}
+            <View style={[styles.cartItem, { backgroundColor: COLORS.white }]} key={index}>
+                <View style={styles.productImageContainer}>
+                    {productImage ? (
+                        <Image
+                            source={{ uri: productImage }}
+                            style={styles.productImage}
+                            resizeMode="cover"
+                        />
+                    ) : (
+                        <View style={styles.productPlaceholder}>
+                            <Ionicons name="image-outline" size={24} color={COLORS.gray} />
+                        </View>
+                    )}
+                </View>
+                <View style={styles.productContent}>
+                    <Text style={[styles.productName, { color: COLORS.secondary }]} numberOfLines={1} ellipsizeMode="tail">
+                        {product.name || item.name || 'Unknown Product'}
                     </Text>
-                    <Text style={[styles.productPrice, { color: COLORS.primary }]}>
-                        ₹{totalPrice}
-                    </Text>
+                    <View style={styles.productDetails}>
+                        <Text style={[styles.productQuantity, { color: COLORS.gray }]}>Qty: {item.quantity}</Text>
+                        <Text style={[styles.productPrice, { color: COLORS.primary }]}>₹{totalPrice}</Text>
+                    </View>
                 </View>
             </View>
         );
@@ -369,9 +431,14 @@ const CheckoutScreen = ({ navigation }) => {
             <ScrollView contentContainerStyle={styles.scrollContainer}>
                 {/* Order Summary */}
                 <View style={[styles.section, { backgroundColor: COLORS.white }]}>
-                    <Text style={[styles.sectionTitle, { color: COLORS.secondary }]}>
-                        Order Summary
-                    </Text>
+                    <View style={styles.sectionHeader}>
+                        <Text style={[styles.sectionTitle, { color: COLORS.secondary }]}>
+                            Order Summary
+                        </Text>
+                        <Text style={[styles.sectionSubtitle, { color: COLORS.gray }]}>
+                            {cartItems.length} {cartItems.length === 1 ? 'item' : 'items'}
+                        </Text>
+                    </View>
                     <View style={styles.cartItems}>
                         {cartItems.map((item, index) => renderCartItem(item, index))}
                     </View>
@@ -394,7 +461,7 @@ const CheckoutScreen = ({ navigation }) => {
                         </Text>
                         <TouchableOpacity
                             style={styles.addButton}
-                            onPress={() => navigation.navigate('ManageAddress')}
+                            onPress={() => navigation.navigate('Profile', { screen: 'ManageAddress' })}
                         >
                             <Ionicons name="add-circle" size={24} color={COLORS.primary} />
                             <Text style={[styles.addButtonText, { color: COLORS.primary }]}>
@@ -455,7 +522,7 @@ const CheckoutScreen = ({ navigation }) => {
                     </Text>
                     <View style={styles.paymentOptions}>
                         <TouchableOpacity
-                            style={styles.paymentOption}
+                            style={[styles.paymentOption, styles.activePaymentOption]}
                             onPress={() => setPaymentMethod('COD')}
                         >
                             <View style={[
@@ -469,10 +536,69 @@ const CheckoutScreen = ({ navigation }) => {
                                     ]} />
                                 )}
                             </View>
-                            <Text style={[styles.paymentOptionText, { color: COLORS.secondary }]}>
-                                Cash on Delivery
-                            </Text>
+                            <View style={styles.paymentOptionContent}>
+                                <View style={styles.paymentOptionHeader}>
+                                    <Text style={[styles.paymentOptionText, { color: COLORS.secondary }]}>
+                                        Cash on Delivery
+                                    </Text>
+                                    <View style={[styles.availableChip, { backgroundColor: COLORS.success }]}>
+                                        <Text style={styles.availableText}>Available</Text>
+                                    </View>
+                                </View>
+                                <Text style={styles.paymentOptionSubtext}>
+                                    Pay when your order is delivered
+                                </Text>
+                            </View>
+                            <Ionicons name="cash-outline" size={24} color={COLORS.secondary} style={styles.paymentIcon} />
                         </TouchableOpacity>
+
+                        {/* UPI Payment - Disabled */}
+                        <View style={[styles.paymentOption, styles.disabledPaymentOption]}>
+                            <View style={[
+                                styles.radioButton,
+                                { borderColor: COLORS.gray }
+                            ]}>
+                                {/* Empty radio button */}
+                            </View>
+                            <View style={styles.paymentOptionContent}>
+                                <View style={styles.paymentOptionHeader}>
+                                    <Text style={[styles.paymentOptionText, { color: COLORS.gray }]}>
+                                        UPI
+                                    </Text>
+                                    <View style={[styles.notAvailableChip, { backgroundColor: COLORS.error }]}>
+                                        <Text style={styles.notAvailableText}>Not Available</Text>
+                                    </View>
+                                </View>
+                                <Text style={styles.paymentOptionSubtext}>
+                                    GPay / PhonePe / Paytm / BHIM UPI (Coming Soon)
+                                </Text>
+                            </View>
+                            <Ionicons name="phone-portrait-outline" size={24} color={COLORS.gray} style={styles.paymentIcon} />
+                        </View>
+
+                        {/* Credit/Debit Card - Disabled */}
+                        <View style={[styles.paymentOption, styles.disabledPaymentOption]}>
+                            <View style={[
+                                styles.radioButton,
+                                { borderColor: COLORS.gray }
+                            ]}>
+                                {/* Empty radio button */}
+                            </View>
+                            <View style={styles.paymentOptionContent}>
+                                <View style={styles.paymentOptionHeader}>
+                                    <Text style={[styles.paymentOptionText, { color: COLORS.gray }]}>
+                                        Credit / Debit Card
+                                    </Text>
+                                    <View style={[styles.notAvailableChip, { backgroundColor: COLORS.error }]}>
+                                        <Text style={styles.notAvailableText}>Not Available</Text>
+                                    </View>
+                                </View>
+                                <Text style={styles.paymentOptionSubtext}>
+                                    Visa, MasterCard, Rupay & more (Coming Soon)
+                                </Text>
+                            </View>
+                            <Ionicons name="card-outline" size={24} color={COLORS.gray} style={styles.paymentIcon} />
+                        </View>
                     </View>
                 </View>
 
@@ -570,6 +696,10 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: 'bold',
     },
+    sectionSubtitle: {
+        fontSize: 14,
+        color: '#888',
+    },
     addButton: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -584,27 +714,52 @@ const styles = StyleSheet.create({
     },
     cartItem: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
-        paddingVertical: 10,
+        paddingVertical: 12,
         borderBottomWidth: 1,
         borderBottomColor: '#f0f0f0',
     },
-    productName: {
+    productImageContainer: {
+        width: 60,
+        height: 60,
+        borderRadius: 8,
+        overflow: 'hidden',
+        marginRight: 12,
+        backgroundColor: '#f5f5f5',
+    },
+    productImage: {
+        width: '100%',
+        height: '100%',
+    },
+    productPlaceholder: {
+        width: 60,
+        height: 60,
+        borderRadius: 8,
+        backgroundColor: '#f0f0f0',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    productContent: {
         flex: 1,
+        justifyContent: 'space-between',
+    },
+    productName: {
         fontSize: 14,
         fontWeight: '500',
-        marginRight: 10,
+        marginBottom: 6,
+        width: '80%', // Ensure long names don't overflow
     },
     productDetails: {
-        alignItems: 'flex-end',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        width: '100%',
     },
     productQuantity: {
-        fontSize: 12,
-        marginBottom: 3,
+        fontSize: 13,
     },
     productPrice: {
-        fontSize: 14,
+        fontSize: 15,
         fontWeight: 'bold',
     },
     divider: {
@@ -670,11 +825,31 @@ const styles = StyleSheet.create({
     paymentOption: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 10,
+        paddingVertical: 15,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f0f0f0',
+    },
+    activePaymentOption: {
+        opacity: 1,
+    },
+    paymentOptionContent: {
+        flex: 1,
+        marginLeft: 10,
     },
     paymentOptionText: {
         fontSize: 16,
+        fontWeight: '500',
+    },
+    paymentOptionSubtext: {
+        fontSize: 12,
+        color: '#888',
+        marginTop: 2,
+    },
+    paymentIcon: {
         marginLeft: 10,
+    },
+    disabledPaymentOption: {
+        opacity: 0.6,
     },
     placeOrderButton: {
         height: 50,
@@ -687,6 +862,34 @@ const styles = StyleSheet.create({
     placeOrderButtonText: {
         fontSize: 16,
         fontWeight: 'bold',
+    },
+    paymentOptionHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 2,
+    },
+    notAvailableChip: {
+        backgroundColor: '#ff6666',
+        paddingHorizontal: 5,
+        paddingVertical: 2,
+        borderRadius: 5,
+    },
+    notAvailableText: {
+        fontSize: 10,
+        fontWeight: 'bold',
+        color: '#ffffff',
+    },
+    availableChip: {
+        backgroundColor: '#4CAF50',
+        paddingHorizontal: 5,
+        paddingVertical: 2,
+        borderRadius: 5,
+    },
+    availableText: {
+        fontSize: 10,
+        fontWeight: 'bold',
+        color: '#ffffff',
     },
 });
 

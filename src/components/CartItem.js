@@ -1,5 +1,14 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import {
+    View,
+    Text,
+    Image,
+    StyleSheet,
+    TouchableOpacity,
+    ActivityIndicator,
+    Platform,
+    useWindowDimensions
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ShopContext } from '../context/ShopContext';
 import { ThemeContext } from '../context/ThemeContext';
@@ -18,9 +27,10 @@ const DEFAULT_COLORS = {
     warning: '#FFC107',
 };
 
-const CartItem = ({ item }) => {
-    const { removeFromCart, updateCartItemCount, allProduct } = useContext(ShopContext);
+const CartItem = ({ item, onPress }) => {
+    const { removeFromCart, allProduct } = useContext(ShopContext);
     const { colors } = useContext(ThemeContext);
+    const { width } = useWindowDimensions();
     const [isUpdating, setIsUpdating] = useState(false);
 
     // Use colors directly from context or fallback to DEFAULT_COLORS
@@ -56,105 +66,147 @@ const CartItem = ({ item }) => {
         setIsUpdating(false);
     };
 
-    const handleUpdateQuantity = async (newQuantity) => {
-        setIsUpdating(true);
-        await updateCartItemCount(item.productId, newQuantity);
-        setIsUpdating(false);
-    };
+    // Calculate item total price
+    const itemTotal = (product.new_price || product.price) * (item.quantity || 1);
+
+    // Adjust image size based on screen width for better responsiveness
+    const imageSize = width < 350 ? 80 : 90;
 
     return (
-        <View style={[styles.container, { backgroundColor: COLORS.white }]}>
-            <Image source={getImageSource()} style={styles.image} />
+        <TouchableOpacity
+            style={[styles.container, { backgroundColor: COLORS.white }]}
+            onPress={onPress}
+            activeOpacity={onPress ? 0.7 : 1}
+        >
+            <Image
+                source={getImageSource()}
+                style={[styles.image, { width: imageSize, height: imageSize }]}
+                resizeMode="cover"
+            />
 
             <View style={styles.detailsContainer}>
-                <Text style={[styles.name, { color: COLORS.secondary }]} numberOfLines={2}>
-                    {product.name}
-                </Text>
+                <View style={styles.topRow}>
+                    <Text style={[styles.name, { color: COLORS.secondary }]} numberOfLines={2}>
+                        {product.name}
+                    </Text>
+
+                    <TouchableOpacity
+                        style={styles.removeButton}
+                        onPress={handleRemoveItem}
+                        disabled={isUpdating}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                        {isUpdating ? (
+                            <ActivityIndicator size="small" color={COLORS.error} />
+                        ) : (
+                            <Ionicons name="trash-outline" size={20} color={COLORS.error} />
+                        )}
+                    </TouchableOpacity>
+                </View>
+
+                {product.old_price && (
+                    <Text style={[styles.oldPrice, { color: COLORS.gray, textDecorationColor: COLORS.gray }]}>
+                        ₹{product.old_price}
+                    </Text>
+                )}
+
                 <Text style={[styles.price, { color: COLORS.primary }]}>
                     ₹{product.new_price || product.price}
                 </Text>
 
-                {isUpdating ? (
-                    <ActivityIndicator size="small" color={COLORS.primary} style={styles.loader} />
-                ) : (
+                <View style={styles.bottomRow}>
                     <View style={styles.quantityContainer}>
-                        <Text style={[styles.quantity, { color: COLORS.secondary }]}>
-                            Quantity: {item.quantity || 1}
+                        <Text style={[styles.quantityLabel, { color: COLORS.gray }]}>
+                            Quantity:
+                        </Text>
+                        <Text style={[styles.quantityText, { color: COLORS.secondary }]}>
+                            {item.quantity || 1}
                         </Text>
                     </View>
-                )}
-            </View>
 
-            <TouchableOpacity
-                style={styles.removeButton}
-                onPress={handleRemoveItem}
-                disabled={isUpdating}
-            >
-                {isUpdating ? (
-                    <ActivityIndicator size="small" color={COLORS.error} />
-                ) : (
-                    <Ionicons name="trash-outline" size={20} color={COLORS.error} />
-                )}
-            </TouchableOpacity>
-        </View>
+                    <Text style={[styles.totalPrice, { color: COLORS.primary }]}>
+                        ₹{itemTotal.toFixed(2)}
+                    </Text>
+                </View>
+            </View>
+        </TouchableOpacity>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
         flexDirection: 'row',
-        padding: 10,
-        marginBottom: 10,
-        borderRadius: 10,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-        elevation: 2,
+        padding: 12,
+        marginBottom: 15,
+        borderRadius: 12,
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 4,
+            },
+            android: {
+                elevation: 3,
+            },
+        }),
     },
     image: {
-        width: 80,
-        height: 80,
         borderRadius: 8,
     },
     detailsContainer: {
         flex: 1,
-        marginLeft: 10,
+        marginLeft: 12,
         justifyContent: 'space-between',
+    },
+    topRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
     },
     name: {
         fontSize: 16,
         fontWeight: '500',
-        marginBottom: 5,
+        flex: 1,
+        marginRight: 10,
+    },
+    oldPrice: {
+        fontSize: 14,
+        textDecorationLine: 'line-through',
+        marginTop: 4,
     },
     price: {
         fontSize: 16,
         fontWeight: 'bold',
-        marginBottom: 5,
+        marginTop: 2,
+    },
+    bottomRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginTop: 8,
     },
     quantityContainer: {
         flexDirection: 'row',
         alignItems: 'center',
     },
-    quantityButton: {
-        width: 28,
-        height: 28,
-        borderWidth: 1,
-        borderRadius: 14,
-        justifyContent: 'center',
-        alignItems: 'center',
+    quantityLabel: {
+        fontSize: 14,
+        marginRight: 5,
     },
-    quantity: {
+    quantityText: {
         fontSize: 16,
         fontWeight: '500',
     },
+    totalPrice: {
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
     removeButton: {
         padding: 5,
-        justifyContent: 'center',
     },
     loader: {
-        marginTop: 10,
-        marginBottom: 10,
+        marginVertical: 5,
     },
 });
 
