@@ -35,9 +35,15 @@ const DEFAULT_COLORS = {
     warning: '#FFC107',
 };
 
+// Safe text component to prevent styling issues
+const SafeText = ({ style, children }) => {
+    const baseStyle = { fontSize: 16 };
+    return <Text style={{ ...baseStyle, ...style }}>{children}</Text>;
+};
+
 const CartScreen = ({ navigation }) => {
     const { cartItems, getTotalCartAmount, isLoading, error, allProduct, refreshCart } = useContext(ShopContext);
-    const { colors } = useContext(ThemeContext);
+    const { colors, isDarkMode } = useContext(ThemeContext);
     const { width } = useWindowDimensions();
 
     // Use colors directly from context or fallback to DEFAULT_COLORS
@@ -50,42 +56,39 @@ const CartScreen = ({ navigation }) => {
                 console.log('CartScreen focused - refreshing cart data');
                 console.log('Current cartItems:', cartItems);
                 try {
-                    // Use the refreshCart function that handles all validation and fresh data fetching
                     await refreshCart();
-
-                    // Log updated cart items
-                    console.log('Cart data after refresh:', cartItems);
-
-                    // Force reload by reading directly from AsyncStorage as a backup
-                    const storedCartItems = await AsyncStorage.getItem('cartItems');
-                    if (storedCartItems) {
-                        console.log('Cart items from AsyncStorage:', storedCartItems.substring(0, 100));
-                    }
                 } catch (error) {
-                    console.error('Error refreshing cart data:', error);
+                    console.error('Error refreshing cart:', error);
                 }
             };
 
             refreshCartData();
-
-            // Return cleanup function
-            return () => {
-                console.log('CartScreen unfocused');
-            };
         }, [])
     );
 
-    if (isLoading || !allProduct) {
+    if (isLoading) {
         return (
-            <View style={[styles.loadingContainer, { backgroundColor: COLORS.background }]}>
-                <ActivityIndicator size="large" color={COLORS.primary} />
-                <Text style={[styles.loadingText, { color: COLORS.secondary }]}>
-                    Loading products...
-                </Text>
-                <Text style={[styles.loadingSubtext, { color: COLORS.gray }]}>
-                    This may take a moment if the server is starting up
-                </Text>
-            </View>
+            <SafeAreaView style={[styles.container, { backgroundColor: isDarkMode ? '#000000' : COLORS.background }]}>
+                <Header title="Shopping Cart" showBack={false} showCart={false} />
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color={isDarkMode ? 'rgb(42, 116, 226)' : COLORS.primary} />
+                    <SafeText style={{
+                        fontSize: 18,
+                        marginTop: 20,
+                        color: isDarkMode ? '#ffffff' : COLORS.secondary
+                    }}>
+                        Loading your cart...
+                    </SafeText>
+                    <SafeText style={{
+                        fontSize: 14,
+                        textAlign: 'center',
+                        marginTop: 10,
+                        color: isDarkMode ? '#bbbbbb' : COLORS.gray
+                    }}>
+                        This may take a moment if the server is starting up
+                    </SafeText>
+                </View>
+            </SafeAreaView>
         );
     }
 
@@ -100,21 +103,35 @@ const CartScreen = ({ navigation }) => {
                 style={styles.emptyCartImage}
                 resizeMode="contain"
             />
-            <Text style={[styles.emptyCartText, { color: COLORS.secondary }]}>
+            <SafeText style={{
+                fontSize: 22,
+                marginBottom: 10,
+                color: isDarkMode ? '#ffffff' : COLORS.secondary
+            }}>
                 Your cart is empty
-            </Text>
-            <Text style={[styles.emptyCartSubtext, { color: COLORS.gray }]}>
+            </SafeText>
+            <SafeText style={{
+                fontSize: 16,
+                textAlign: 'center',
+                marginBottom: 30,
+                color: isDarkMode ? '#bbbbbb' : COLORS.gray
+            }}>
                 Looks like you haven't added anything to your cart yet
-            </Text>
+            </SafeText>
             <TouchableOpacity
-                style={[styles.shopNowButton, { backgroundColor: COLORS.primary }]}
+                style={[styles.shopNowButton, {
+                    backgroundColor: isDarkMode ? 'rgb(42, 116, 226)' : COLORS.primary
+                }]}
                 onPress={() => navigation.navigate('Shop')}
                 activeOpacity={0.8}
             >
-                <Text style={[styles.shopNowButtonText, { color: COLORS.white }]}>
+                <SafeText style={{
+                    fontSize: 16,
+                    color: '#ffffff'
+                }}>
                     Shop Now
-                </Text>
-                <Ionicons name="arrow-forward" size={18} color={COLORS.white} style={{ marginLeft: 5 }} />
+                </SafeText>
+                <Ionicons name="arrow-forward" size={18} color="#ffffff" style={{ marginLeft: 5 }} />
             </TouchableOpacity>
         </View>
     );
@@ -124,7 +141,7 @@ const CartScreen = ({ navigation }) => {
     );
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: COLORS.background }]}>
+        <SafeAreaView style={[styles.container, { backgroundColor: isDarkMode ? '#000000' : COLORS.background }]}>
             <Header title="Shopping Cart" showBack={false} showCart={false} />
 
             {cartItems.length === 0 ? (
@@ -146,38 +163,55 @@ const CartScreen = ({ navigation }) => {
                     />
 
                     <View style={[styles.cartSummary, {
-                        backgroundColor: COLORS.white,
-                        borderTopColor: COLORS.lightGray
+                        backgroundColor: isDarkMode ? '#1e1e1e' : COLORS.white,
+                        borderTopColor: isDarkMode ? '#333333' : COLORS.lightGray
                     }]}>
                         <View style={styles.summaryRow}>
-                            <Text style={[styles.summaryText, { color: COLORS.secondary }]}>
+                            <SafeText style={{
+                                fontSize: 16,
+                                color: isDarkMode ? '#ffffff' : COLORS.secondary
+                            }}>
                                 Subtotal:
-                            </Text>
-                            <Text style={[styles.summaryValue, { color: COLORS.secondary }]}>
+                            </SafeText>
+                            <SafeText style={{
+                                fontSize: 16,
+                                color: isDarkMode ? '#ffffff' : COLORS.secondary
+                            }}>
                                 ₹{totalAmount}
-                            </Text>
+                            </SafeText>
                         </View>
 
-                        <View style={[styles.divider, { backgroundColor: COLORS.lightGray }]} />
+                        <View style={[styles.divider, { backgroundColor: isDarkMode ? '#333333' : COLORS.lightGray }]} />
 
                         <View style={styles.summaryRow}>
-                            <Text style={[styles.summaryText, { color: COLORS.primary, fontWeight: 'bold' }]}>
+                            <SafeText style={{
+                                fontSize: 18,
+                                color: isDarkMode ? 'rgb(42, 116, 226)' : COLORS.primary
+                            }}>
                                 Total:
-                            </Text>
-                            <Text style={[styles.summaryValue, { color: COLORS.primary, fontWeight: 'bold' }]}>
+                            </SafeText>
+                            <SafeText style={{
+                                fontSize: 18,
+                                color: isDarkMode ? 'rgb(42, 116, 226)' : COLORS.primary
+                            }}>
                                 ₹{finalAmount}
-                            </Text>
+                            </SafeText>
                         </View>
 
                         <TouchableOpacity
-                            style={[styles.checkoutButton, { backgroundColor: COLORS.primary }]}
+                            style={[styles.checkoutButton, {
+                                backgroundColor: isDarkMode ? 'rgb(42, 116, 226)' : COLORS.primary
+                            }]}
                             onPress={() => navigation.navigate('Checkout')}
                             activeOpacity={0.8}
                         >
-                            <Text style={[styles.checkoutButtonText, { color: COLORS.white }]}>
+                            <SafeText style={{
+                                fontSize: 16,
+                                color: '#ffffff'
+                            }}>
                                 Proceed to Checkout
-                            </Text>
-                            <Ionicons name="arrow-forward" size={18} color={COLORS.white} style={{ marginLeft: 5 }} />
+                            </SafeText>
+                            <Ionicons name="arrow-forward" size={18} color="#ffffff" style={{ marginLeft: 5 }} />
                         </TouchableOpacity>
 
                         <View style={styles.bottomSafeArea} />
@@ -202,16 +236,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         padding: 20,
     },
-    loadingText: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        marginTop: 20,
-    },
-    loadingSubtext: {
-        fontSize: 14,
-        textAlign: 'center',
-        marginTop: 10,
-    },
     emptyCartContainer: {
         flex: 1,
         justifyContent: 'center',
@@ -222,39 +246,6 @@ const styles = StyleSheet.create({
         width: 200,
         height: 200,
         marginBottom: 20,
-    },
-    emptyCartText: {
-        fontSize: 22,
-        fontWeight: 'bold',
-        marginBottom: 10,
-    },
-    emptyCartSubtext: {
-        fontSize: 16,
-        textAlign: 'center',
-        marginBottom: 30,
-    },
-    shopNowButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: 12,
-        paddingHorizontal: 25,
-        borderRadius: 8,
-        ...Platform.select({
-            ios: {
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.1,
-                shadowRadius: 4,
-            },
-            android: {
-                elevation: 3,
-            },
-        }),
-    },
-    shopNowButtonText: {
-        fontSize: 16,
-        fontWeight: 'bold',
     },
     cartItemsList: {
         padding: 15,
@@ -289,13 +280,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: 10,
     },
-    summaryText: {
-        fontSize: 16,
-    },
-    summaryValue: {
-        fontSize: 16,
-        fontWeight: '600',
-    },
     divider: {
         height: 1,
         marginVertical: 10,
@@ -309,12 +293,27 @@ const styles = StyleSheet.create({
         marginTop: 15,
         marginBottom: 5,
     },
-    checkoutButtonText: {
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
     bottomSafeArea: {
         height: Platform.OS === 'ios' ? 20 : 0,
+    },
+    shopNowButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 12,
+        paddingHorizontal: 25,
+        borderRadius: 8,
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 4,
+            },
+            android: {
+                elevation: 3,
+            },
+        }),
     },
 });
 

@@ -1,8 +1,9 @@
-import React, { createContext, useEffect, useState, useRef } from 'react';
+import React, { createContext, useEffect, useState, useRef, useContext } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../utils/api';
 import { Alert } from 'react-native';
 import axios from 'axios';
+import { AuthContext } from './AuthContext';
 
 export const ShopContext = createContext(null);
 
@@ -13,6 +14,12 @@ const ShopContextProvider = ({ children }) => {
     const [userRole, setUserRole] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [users, setUsers] = useState([]);
+    const [orders, setOrders] = useState([]);
+    const [categories, setCategories] = useState([]);
+
+    // Get user from AuthContext
+    const { user } = useContext(AuthContext);
 
     // Create a ref to the context values
     const contextRef = useRef(null);
@@ -39,6 +46,18 @@ const ShopContextProvider = ({ children }) => {
             }
         };
     }, []);
+
+    // Update userRole when user changes
+    useEffect(() => {
+        if (user) {
+            setUserId(user._id);
+            setUserRole(user.role || 'user');
+            console.log('ShopContext: User role set to:', user.role || 'user');
+        } else {
+            setUserId(null);
+            setUserRole(null);
+        }
+    }, [user]);
 
     // Fetch all products
     const fetchProducts = async () => {
@@ -670,6 +689,175 @@ const ShopContextProvider = ({ children }) => {
         }
     };
 
+    // Admin functions
+    const fetchUsers = async () => {
+        try {
+            const response = await api.get('/auth/getAllusers');
+            setUsers(response.data);
+        } catch (error) {
+            console.error('Error fetching users:', error);
+            throw error;
+        }
+    };
+
+    const fetchOrders = async () => {
+        try {
+            const response = await api.get('/order/allorders');
+            setOrders(response.data);
+        } catch (error) {
+            console.error('Error fetching orders:', error);
+            throw error;
+        }
+    };
+
+    const fetchCategories = async () => {
+        try {
+            // Instead of fetching from a separate endpoint, we'll derive categories from products
+            const uniqueCategories = [...new Set(allProduct.map(product => product.category))];
+            setCategories(uniqueCategories);
+        } catch (error) {
+            console.error('Error setting categories:', error);
+            setCategories(['men', 'women', 'kid']); // Fallback categories
+        }
+    };
+
+    const addProduct = async (productData) => {
+        try {
+            const formData = new FormData();
+            Object.keys(productData).forEach(key => {
+                if (key === 'image' && productData[key]) {
+                    formData.append('image', {
+                        uri: productData[key].uri,
+                        type: 'image/jpeg',
+                        name: 'product_image.jpg',
+                    });
+                } else {
+                    formData.append(key, productData[key]);
+                }
+            });
+
+            const response = await api.post('/product/create', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+
+            setAllProduct(prev => [...prev, response.data]);
+            return response.data;
+        } catch (error) {
+            console.error('Error adding product:', error);
+            throw error;
+        }
+    };
+
+    const updateProduct = async (productId, productData) => {
+        try {
+            const formData = new FormData();
+            Object.keys(productData).forEach(key => {
+                if (key === 'image' && productData[key]) {
+                    formData.append('image', {
+                        uri: productData[key].uri,
+                        type: 'image/jpeg',
+                        name: 'product_image.jpg',
+                    });
+                } else {
+                    formData.append(key, productData[key]);
+                }
+            });
+
+            const response = await api.put(`/product/update/${productId}`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+
+            setAllProduct(prev =>
+                prev.map(product =>
+                    product._id === productId ? response.data : product
+                )
+            );
+            return response.data;
+        } catch (error) {
+            console.error('Error updating product:', error);
+            throw error;
+        }
+    };
+
+    const deleteProduct = async (productId) => {
+        try {
+            await api.delete(`/product/delete/${productId}`);
+            setAllProduct(prev => prev.filter(product => product._id !== productId));
+        } catch (error) {
+            console.error('Error deleting product:', error);
+            throw error;
+        }
+    };
+
+    const updateUserRole = async (userId, newRole) => {
+        try {
+            const response = await api.put(`/auth/${newRole === 'admin' ? 'makeAdmin' : 'revertAdmin'}/${userId}`);
+            setUsers(prev =>
+                prev.map(user =>
+                    user._id === userId ? { ...user, role: newRole } : user
+                )
+            );
+            return response.data;
+        } catch (error) {
+            console.error('Error updating user role:', error);
+            throw error;
+        }
+    };
+
+    const deleteUser = async (userId) => {
+        try {
+            await api.delete(`/auth/deleteUser/${userId}`);
+            setUsers(prev => prev.filter(user => user._id !== userId));
+        } catch (error) {
+            console.error('Error deleting user:', error);
+            throw error;
+        }
+    };
+
+    const updateOrderStatus = async (orderId, newStatus) => {
+        try {
+            const response = await api.put(`/order/status/${orderId}`, { status: newStatus });
+            setOrders(prev =>
+                prev.map(order =>
+                    order._id === orderId ? { ...order, status: newStatus } : order
+                )
+            );
+            return response.data;
+        } catch (error) {
+            console.error('Error updating order status:', error);
+            throw error;
+        }
+    };
+
+    // Initialize admin data
+    useEffect(() => {
+        const initializeAdminData = async () => {
+            if (userRole === 'admin') {
+                try {
+                    // Fetch users and orders first
+                    await Promise.allSettled([
+                        fetchUsers(),
+                        fetchOrders(),
+                    ]);
+
+                    // Then set categories based on products
+                    await fetchCategories();
+                } catch (error) {
+                    console.error('Error initializing admin data:', error);
+                    // Set default categories as fallback
+                    setCategories(['men', 'women', 'kid']);
+                }
+            }
+        };
+
+        initializeAdminData();
+    }, [userRole, allProduct]);
+
+    // Update the context value to include admin functions
     const contextValue = {
         allProduct,
         setAllProduct,
@@ -689,7 +877,19 @@ const ShopContextProvider = ({ children }) => {
         clearCart,
         fetchCartData,
         refreshCart,
-        ensureCartData
+        ensureCartData,
+        users,
+        orders,
+        categories,
+        addProduct,
+        updateProduct,
+        deleteProduct,
+        updateUserRole,
+        deleteUser,
+        updateOrderStatus,
+        fetchUsers,
+        fetchOrders,
+        fetchCategories,
     };
 
     return (

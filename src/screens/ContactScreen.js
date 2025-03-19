@@ -6,14 +6,15 @@ import {
     ScrollView,
     TouchableOpacity,
     Linking,
-    Platform
+    Platform,
+    SafeAreaView
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemeContext } from '../context/ThemeContext';
 import Header from '../components/Header';
 
 const ContactScreen = () => {
-    const { colors } = useContext(ThemeContext);
+    const { colors, isDarkMode } = useContext(ThemeContext);
 
     const appFeatures = [
         "Easy and secure shopping experience",
@@ -36,7 +37,9 @@ const ContactScreen = () => {
     const renderFeatureItem = (feature) => (
         <View
             key={feature}
-            style={[styles.featureItem, { backgroundColor: colors.primary }]}
+            style={[styles.featureItem, {
+                backgroundColor: isDarkMode ? 'rgb(42, 116, 226)' : colors.primary
+            }]}
         >
             <Ionicons
                 name="checkmark-circle"
@@ -51,18 +54,18 @@ const ContactScreen = () => {
     );
 
     return (
-        <View style={[styles.container, { backgroundColor: colors.background }]}>
-            <Header title="Contact Us" />
+        <SafeAreaView style={[styles.container, { backgroundColor: isDarkMode ? '#000000' : colors.background }]}>
+            <Header title="Contact Us" showBack={true} />
             <ScrollView
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
             >
                 {/* App Info Section */}
-                <View style={[styles.section, { backgroundColor: colors.white }]}>
-                    <Text style={[styles.sectionTitle, { color: colors.secondary }]}>
+                <View style={[styles.section, { backgroundColor: isDarkMode ? '#1e1e1e' : colors.white }]}>
+                    <Text style={[styles.sectionTitle, { color: isDarkMode ? '#ffffff' : colors.secondary }]}>
                         About A-Kart
                     </Text>
-                    <Text style={[styles.description, { color: colors.secondary }]}>
+                    <Text style={[styles.description, { color: isDarkMode ? '#ffffff' : colors.secondary }]}>
                         A-Kart is your one-stop shopping destination for all your needs.
                         We provide a seamless shopping experience with a wide range of products
                         and exceptional customer service.
@@ -70,8 +73,8 @@ const ContactScreen = () => {
                 </View>
 
                 {/* Features Section */}
-                <View style={[styles.section, { backgroundColor: colors.white }]}>
-                    <Text style={[styles.sectionTitle, { color: colors.secondary }]}>
+                <View style={[styles.section, { backgroundColor: isDarkMode ? '#1e1e1e' : colors.white }]}>
+                    <Text style={[styles.sectionTitle, { color: isDarkMode ? '#ffffff' : colors.secondary }]}>
                         Key Features
                     </Text>
                     <View style={styles.featuresList}>
@@ -80,21 +83,21 @@ const ContactScreen = () => {
                 </View>
 
                 {/* Developer Info */}
-                <View style={[styles.section, { backgroundColor: colors.white }]}>
-                    <Text style={[styles.sectionTitle, { color: colors.secondary }]}>
+                <View style={[styles.section, { backgroundColor: isDarkMode ? '#1e1e1e' : colors.white }]}>
+                    <Text style={[styles.sectionTitle, { color: isDarkMode ? '#ffffff' : colors.secondary }]}>
                         Developer
                     </Text>
-                    <Text style={[styles.developerName, { color: colors.primary }]}>
+                    <Text style={[styles.developerName, { color: isDarkMode ? 'rgb(42, 116, 226)' : colors.primary }]}>
                         Akash Kumar
                     </Text>
-                    <Text style={[styles.developerRole, { color: colors.secondary }]}>
+                    <Text style={[styles.developerRole, { color: isDarkMode ? '#bbbbbb' : colors.secondary }]}>
                         Full Stack Developer
                     </Text>
                 </View>
 
                 {/* Contact Section */}
-                <View style={[styles.section, { backgroundColor: colors.white }]}>
-                    <Text style={[styles.sectionTitle, { color: colors.secondary }]}>
+                <View style={[styles.section, { backgroundColor: isDarkMode ? '#1e1e1e' : colors.white }]}>
+                    <Text style={[styles.sectionTitle, { color: isDarkMode ? '#ffffff' : colors.secondary }]}>
                         Contact Information
                     </Text>
 
@@ -102,8 +105,8 @@ const ContactScreen = () => {
                         style={styles.contactItem}
                         onPress={handleEmailPress}
                     >
-                        <Ionicons name="mail" size={24} color={colors.primary} />
-                        <Text style={[styles.contactText, { color: colors.secondary }]}>
+                        <Ionicons name="mail" size={24} color={isDarkMode ? 'rgb(42, 116, 226)' : colors.primary} />
+                        <Text style={[styles.contactText, { color: isDarkMode ? '#ffffff' : colors.secondary }]}>
                             kumarakash91384@gmail.com
                         </Text>
                     </TouchableOpacity>
@@ -112,32 +115,32 @@ const ContactScreen = () => {
                         style={styles.contactItem}
                         onPress={handlePhonePress}
                     >
-                        <Ionicons name="call" size={24} color={colors.primary} />
-                        <Text style={[styles.contactText, { color: colors.secondary }]}>
+                        <Ionicons name="call" size={24} color={isDarkMode ? 'rgb(42, 116, 226)' : colors.primary} />
+                        <Text style={[styles.contactText, { color: isDarkMode ? '#ffffff' : colors.secondary }]}>
                             91 9528346957
                         </Text>
                     </TouchableOpacity>
 
                     <View style={styles.contactItem}>
-                        <Ionicons name="location" size={24} color={colors.primary} />
-                        <Text style={[styles.contactText, { color: colors.secondary }]}>
+                        <Ionicons name="location" size={24} color={isDarkMode ? 'rgb(42, 116, 226)' : colors.primary} />
+                        <Text style={[styles.contactText, { color: isDarkMode ? '#ffffff' : colors.secondary }]}>
                             Mathura, UP, India
                         </Text>
                     </View>
                 </View>
 
                 {/* Support Hours */}
-                <View style={[styles.section, { backgroundColor: colors.white }]}>
-                    <Text style={[styles.sectionTitle, { color: colors.secondary }]}>
+                <View style={[styles.section, { backgroundColor: isDarkMode ? '#1e1e1e' : colors.white }]}>
+                    <Text style={[styles.sectionTitle, { color: isDarkMode ? '#ffffff' : colors.secondary }]}>
                         Support Hours
                     </Text>
-                    <Text style={[styles.supportText, { color: colors.secondary }]}>
+                    <Text style={[styles.supportText, { color: isDarkMode ? '#ffffff' : colors.secondary }]}>
                         Monday - Saturday: 9:00 AM - 8:00 PM{'\n'}
                         Sunday: 10:00 AM - 6:00 PM
                     </Text>
                 </View>
             </ScrollView>
-        </View>
+        </SafeAreaView>
     );
 };
 
@@ -166,7 +169,6 @@ const styles = StyleSheet.create({
     },
     sectionTitle: {
         fontSize: 20,
-        fontWeight: 'bold',
         marginBottom: 15,
     },
     description: {
@@ -191,7 +193,6 @@ const styles = StyleSheet.create({
     },
     developerName: {
         fontSize: 18,
-        fontWeight: 'bold',
         marginBottom: 5,
     },
     developerRole: {

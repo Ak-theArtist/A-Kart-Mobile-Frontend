@@ -1,6 +1,9 @@
 import React, { createContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AppState } from 'react-native';
+import { AppState, Appearance } from 'react-native';
+
+// Fix for React Navigation's HeaderTitle component
+import { DefaultTheme, DarkTheme } from '@react-navigation/native';
 
 // Fixed colors for light and dark modes
 export const COLORS = {
@@ -31,6 +34,17 @@ export const DARK_COLORS = {
     warning: '#FFD93D',
 };
 
+// Fix React Navigation's default themes to prevent the HeaderTitle error
+DefaultTheme.colors.background = COLORS.background;
+DefaultTheme.colors.card = COLORS.white;
+DefaultTheme.colors.text = COLORS.secondary;
+DefaultTheme.colors.border = COLORS.lightGray;
+
+DarkTheme.colors.background = DARK_COLORS.background;
+DarkTheme.colors.card = DARK_COLORS.white;
+DarkTheme.colors.text = DARK_COLORS.secondary;
+DarkTheme.colors.border = DARK_COLORS.lightGray;
+
 // Create context with default values
 export const ThemeContext = createContext({
     isDarkMode: false,
@@ -43,58 +57,72 @@ export const ThemeProvider = ({ children }) => {
     const [isDarkMode, setIsDarkMode] = useState(false);
     const [colors, setColors] = useState(COLORS);
 
-    // Load saved dark mode preference
+    // Load saved theme preference
     useEffect(() => {
-        const loadDarkModePreference = async () => {
+        const loadThemePreference = async () => {
             try {
-                const savedMode = await AsyncStorage.getItem('isDarkMode');
-                if (savedMode !== null) {
-                    const darkMode = savedMode === 'true';
-                    setIsDarkMode(darkMode);
-                    setColors(darkMode ? DARK_COLORS : COLORS);
+                const savedTheme = await AsyncStorage.getItem('theme_preference');
+                if (savedTheme !== null) {
+                    const themeMode = savedTheme === 'dark';
+                    setIsDarkMode(themeMode);
+                    setColors(themeMode ? DARK_COLORS : COLORS);
+                    return;
                 }
+
+                // If no saved preference, use system preference
+                const colorScheme = Appearance.getColorScheme();
+                const systemDarkMode = colorScheme === 'dark';
+                setIsDarkMode(systemDarkMode);
+                setColors(systemDarkMode ? DARK_COLORS : COLORS);
+
             } catch (error) {
-                console.error('Error loading dark mode preference:', error);
+                console.error('Error loading theme preference:', error);
             }
         };
 
-        loadDarkModePreference();
+        loadThemePreference();
 
-        // Set up a listener for when the app comes back into focus
-        // This ensures the theme is updated if isDarkMode was changed externally (like during logout)
-        const focusListener = () => {
-            loadDarkModePreference();
-        };
-
-        // Subscribe to app state changes
-        const appStateListener = AppState.addEventListener('change', (nextAppState) => {
-            if (nextAppState === 'active') {
-                focusListener();
-            }
+        // Listen for system theme changes
+        const subscription = Appearance.addChangeListener(({ colorScheme }) => {
+            // Only update if user hasn't set a preference
+            AsyncStorage.getItem('theme_preference').then(savedTheme => {
+                if (savedTheme === null) {
+                    const systemDarkMode = colorScheme === 'dark';
+                    setIsDarkMode(systemDarkMode);
+                    setColors(systemDarkMode ? DARK_COLORS : COLORS);
+                }
+            });
         });
 
         return () => {
-            appStateListener.remove();
+            subscription.remove();
         };
     }, []);
 
-    // Save dark mode preference when it changes
+    // Save theme preference when it changes
     useEffect(() => {
-        const saveDarkModePreference = async () => {
+        const saveThemePreference = async () => {
             try {
-                await AsyncStorage.setItem('isDarkMode', String(isDarkMode));
+                await AsyncStorage.setItem('theme_preference', isDarkMode ? 'dark' : 'light');
                 setColors(isDarkMode ? DARK_COLORS : COLORS);
             } catch (error) {
-                console.error('Error saving dark mode preference:', error);
+                console.error('Error saving theme preference:', error);
             }
         };
 
-        saveDarkModePreference();
+        saveThemePreference();
     }, [isDarkMode]);
 
     // Toggle dark mode
-    const toggleDarkMode = () => {
-        setIsDarkMode(prev => !prev);
+    const toggleDarkMode = async () => {
+        try {
+            const newMode = !isDarkMode;
+            setIsDarkMode(newMode);
+            setColors(newMode ? DARK_COLORS : COLORS);
+            await AsyncStorage.setItem('theme_preference', newMode ? 'dark' : 'light');
+        } catch (error) {
+            console.error('Error saving theme preference:', error);
+        }
     };
 
     // Reset to light theme

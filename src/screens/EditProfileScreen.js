@@ -9,7 +9,8 @@ import {
     ActivityIndicator,
     Alert,
     KeyboardAvoidingView,
-    Platform
+    Platform,
+    SafeAreaView
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AuthContext } from '../context/AuthContext';
@@ -33,7 +34,7 @@ const DEFAULT_COLORS = {
 
 const EditProfileScreen = ({ navigation }) => {
     const { user, updateProfile, isLoading } = useContext(AuthContext);
-    const { colors } = useContext(ThemeContext);
+    const { colors, isDarkMode } = useContext(ThemeContext);
 
     // Use colors directly from context or fallback to DEFAULT_COLORS
     const COLORS = colors || DEFAULT_COLORS;
@@ -117,156 +118,157 @@ const EditProfileScreen = ({ navigation }) => {
     }
 
     return (
-        <KeyboardAvoidingView
-            style={[styles.container, { backgroundColor: COLORS.background }]}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
-        >
-            <Header title="Edit Profile" showBack={true} onBackPress={() => navigation.goBack()} />
-
-            <ScrollView contentContainerStyle={styles.scrollContainer}>
-                <View style={[styles.formContainer, { backgroundColor: COLORS.white }]}>
-                    <Text style={[styles.sectionTitle, { color: COLORS.secondary }]}>
-                        Personal Information
-                    </Text>
-
-                    {successMessage ? (
-                        <Text style={[styles.successMessage, { color: COLORS.success }]}>
-                            {successMessage}
+        <SafeAreaView style={[styles.container, { backgroundColor: isDarkMode ? COLORS.darkBackground : COLORS.background }]}>
+            <Header title="Edit Profile" showBack={true} showCart={false} />
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={{ flex: 1 }}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+            >
+                <ScrollView contentContainerStyle={styles.scrollContainer}>
+                    <View style={[styles.formContainer, { backgroundColor: COLORS.white }]}>
+                        <Text style={[styles.sectionTitle, { color: COLORS.secondary }]}>
+                            Personal Information
                         </Text>
-                    ) : null}
 
-                    <View style={styles.inputGroup}>
-                        <Text style={[styles.label, { color: COLORS.secondary }]}>Name</Text>
-                        <TextInput
-                            style={[
-                                styles.input,
-                                {
-                                    borderColor: validationErrors.name ? COLORS.error : COLORS.lightGray,
-                                    color: COLORS.secondary
-                                }
-                            ]}
-                            value={formData.name}
-                            onChangeText={(text) => handleChange('name', text)}
-                            placeholder="Enter your name"
-                            placeholderTextColor={COLORS.gray}
-                        />
-                        {validationErrors.name ? (
-                            <Text style={[styles.errorText, { color: COLORS.error }]}>
-                                {validationErrors.name}
+                        {successMessage ? (
+                            <Text style={[styles.successMessage, { color: COLORS.success }]}>
+                                {successMessage}
                             </Text>
                         ) : null}
-                    </View>
 
-                    <View style={styles.inputGroup}>
-                        <Text style={[styles.label, { color: COLORS.secondary }]}>Email</Text>
-                        <TextInput
-                            style={[
-                                styles.input,
-                                {
-                                    borderColor: validationErrors.email ? COLORS.error : COLORS.lightGray,
-                                    color: COLORS.secondary
-                                }
-                            ]}
-                            value={formData.email}
-                            onChangeText={(text) => handleChange('email', text)}
-                            placeholder="Enter your email"
-                            placeholderTextColor={COLORS.gray}
-                            keyboardType="email-address"
-                            autoCapitalize="none"
-                        />
-                        {validationErrors.email ? (
-                            <Text style={[styles.errorText, { color: COLORS.error }]}>
-                                {validationErrors.email}
-                            </Text>
-                        ) : null}
-                    </View>
-
-                    <View style={styles.inputGroup}>
-                        <Text style={[styles.label, { color: COLORS.secondary }]}>Mobile Number</Text>
-                        <TextInput
-                            style={[
-                                styles.input,
-                                {
-                                    borderColor: validationErrors.mobileNumber ? COLORS.error : COLORS.lightGray,
-                                    color: COLORS.secondary
-                                }
-                            ]}
-                            value={formData.mobileNumber}
-                            onChangeText={(text) => handleChange('mobileNumber', text)}
-                            placeholder="Enter your mobile number"
-                            placeholderTextColor={COLORS.gray}
-                            keyboardType="phone-pad"
-                            maxLength={10}
-                        />
-                        {validationErrors.mobileNumber ? (
-                            <Text style={[styles.errorText, { color: COLORS.error }]}>
-                                {validationErrors.mobileNumber}
-                            </Text>
-                        ) : null}
-                    </View>
-
-                    <View style={styles.inputGroup}>
-                        <Text style={[styles.label, { color: COLORS.secondary }]}>Gender</Text>
-                        <View style={styles.radioGroup}>
-                            <TouchableOpacity
-                                style={styles.radioOption}
-                                onPress={() => handleChange('gender', 'Male')}
-                            >
-                                <View style={[
-                                    styles.radioButton,
-                                    { borderColor: COLORS.primary }
-                                ]}>
-                                    {formData.gender === 'Male' && (
-                                        <View style={[
-                                            styles.radioButtonSelected,
-                                            { backgroundColor: COLORS.primary }
-                                        ]} />
-                                    )}
-                                </View>
-                                <Text style={[styles.radioLabel, { color: COLORS.secondary }]}>Male</Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity
-                                style={styles.radioOption}
-                                onPress={() => handleChange('gender', 'Female')}
-                            >
-                                <View style={[
-                                    styles.radioButton,
-                                    { borderColor: COLORS.primary }
-                                ]}>
-                                    {formData.gender === 'Female' && (
-                                        <View style={[
-                                            styles.radioButtonSelected,
-                                            { backgroundColor: COLORS.primary }
-                                        ]} />
-                                    )}
-                                </View>
-                                <Text style={[styles.radioLabel, { color: COLORS.secondary }]}>Female</Text>
-                            </TouchableOpacity>
+                        <View style={styles.inputGroup}>
+                            <Text style={[styles.label, { color: COLORS.secondary }]}>Name</Text>
+                            <TextInput
+                                style={[
+                                    styles.input,
+                                    {
+                                        borderColor: validationErrors.name ? COLORS.error : COLORS.lightGray,
+                                        color: COLORS.secondary
+                                    }
+                                ]}
+                                value={formData.name}
+                                onChangeText={(text) => handleChange('name', text)}
+                                placeholder="Enter your name"
+                                placeholderTextColor={COLORS.gray}
+                            />
+                            {validationErrors.name ? (
+                                <Text style={[styles.errorText, { color: COLORS.error }]}>
+                                    {validationErrors.name}
+                                </Text>
+                            ) : null}
                         </View>
-                    </View>
 
-                    <TouchableOpacity
-                        style={[
-                            styles.submitButton,
-                            { backgroundColor: COLORS.primary },
-                            isSubmitting && { opacity: 0.7 }
-                        ]}
-                        onPress={handleSubmit}
-                        disabled={isSubmitting}
-                    >
-                        {isSubmitting ? (
-                            <ActivityIndicator color={COLORS.white} size="small" />
-                        ) : (
-                            <Text style={[styles.submitButtonText, { color: COLORS.white }]}>
-                                Update Profile
-                            </Text>
-                        )}
-                    </TouchableOpacity>
-                </View>
-            </ScrollView>
-        </KeyboardAvoidingView>
+                        <View style={styles.inputGroup}>
+                            <Text style={[styles.label, { color: COLORS.secondary }]}>Email</Text>
+                            <TextInput
+                                style={[
+                                    styles.input,
+                                    {
+                                        borderColor: validationErrors.email ? COLORS.error : COLORS.lightGray,
+                                        color: COLORS.secondary
+                                    }
+                                ]}
+                                value={formData.email}
+                                onChangeText={(text) => handleChange('email', text)}
+                                placeholder="Enter your email"
+                                placeholderTextColor={COLORS.gray}
+                                keyboardType="email-address"
+                                autoCapitalize="none"
+                            />
+                            {validationErrors.email ? (
+                                <Text style={[styles.errorText, { color: COLORS.error }]}>
+                                    {validationErrors.email}
+                                </Text>
+                            ) : null}
+                        </View>
+
+                        <View style={styles.inputGroup}>
+                            <Text style={[styles.label, { color: COLORS.secondary }]}>Mobile Number</Text>
+                            <TextInput
+                                style={[
+                                    styles.input,
+                                    {
+                                        borderColor: validationErrors.mobileNumber ? COLORS.error : COLORS.lightGray,
+                                        color: COLORS.secondary
+                                    }
+                                ]}
+                                value={formData.mobileNumber}
+                                onChangeText={(text) => handleChange('mobileNumber', text)}
+                                placeholder="Enter your mobile number"
+                                placeholderTextColor={COLORS.gray}
+                                keyboardType="phone-pad"
+                                maxLength={10}
+                            />
+                            {validationErrors.mobileNumber ? (
+                                <Text style={[styles.errorText, { color: COLORS.error }]}>
+                                    {validationErrors.mobileNumber}
+                                </Text>
+                            ) : null}
+                        </View>
+
+                        <View style={styles.inputGroup}>
+                            <Text style={[styles.label, { color: COLORS.secondary }]}>Gender</Text>
+                            <View style={styles.radioGroup}>
+                                <TouchableOpacity
+                                    style={styles.radioOption}
+                                    onPress={() => handleChange('gender', 'Male')}
+                                >
+                                    <View style={[
+                                        styles.radioButton,
+                                        { borderColor: COLORS.primary }
+                                    ]}>
+                                        {formData.gender === 'Male' && (
+                                            <View style={[
+                                                styles.radioButtonSelected,
+                                                { backgroundColor: COLORS.primary }
+                                            ]} />
+                                        )}
+                                    </View>
+                                    <Text style={[styles.radioLabel, { color: COLORS.secondary }]}>Male</Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    style={styles.radioOption}
+                                    onPress={() => handleChange('gender', 'Female')}
+                                >
+                                    <View style={[
+                                        styles.radioButton,
+                                        { borderColor: COLORS.primary }
+                                    ]}>
+                                        {formData.gender === 'Female' && (
+                                            <View style={[
+                                                styles.radioButtonSelected,
+                                                { backgroundColor: COLORS.primary }
+                                            ]} />
+                                        )}
+                                    </View>
+                                    <Text style={[styles.radioLabel, { color: COLORS.secondary }]}>Female</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+
+                        <TouchableOpacity
+                            style={[
+                                styles.submitButton,
+                                { backgroundColor: COLORS.primary },
+                                isSubmitting && { opacity: 0.7 }
+                            ]}
+                            onPress={handleSubmit}
+                            disabled={isSubmitting}
+                        >
+                            {isSubmitting ? (
+                                <ActivityIndicator color={COLORS.white} size="small" />
+                            ) : (
+                                <Text style={[styles.submitButtonText, { color: COLORS.white }]}>
+                                    Update Profile
+                                </Text>
+                            )}
+                        </TouchableOpacity>
+                    </View>
+                </ScrollView>
+            </KeyboardAvoidingView>
+        </SafeAreaView>
     );
 };
 

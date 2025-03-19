@@ -28,7 +28,7 @@ import { SIZES } from '../constants/theme';
 const HomeScreen = ({ navigation }) => {
     const { allProduct, fetchProducts, refreshCart } = useContext(ShopContext);
     const { user } = useContext(AuthContext);
-    const { colors } = useContext(ThemeContext);
+    const { colors, isDarkMode } = useContext(ThemeContext);
     const { width } = useWindowDimensions();
     const [refreshing, setRefreshing] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -267,12 +267,16 @@ const HomeScreen = ({ navigation }) => {
                 <TouchableOpacity
                     style={[
                         styles.searchButton,
-                        { backgroundColor: colors.primary }
+                        {
+                            backgroundColor: isDarkMode
+                                ? 'rgb(42, 116, 226)'  // Brighter blue for dark mode
+                                : colors.primary
+                        }
                     ]}
                     onPress={() => navigation.navigate('Contact')}
                     activeOpacity={0.8}
                 >
-                    <Ionicons name="information-circle" size={24} color="white" />
+                    <Ionicons name="information-circle" size={24} color="#ffffff" />
                 </TouchableOpacity>
             </View>
         </View>

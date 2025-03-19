@@ -6,7 +6,8 @@ import {
     Switch,
     TouchableOpacity,
     ScrollView,
-    StatusBar
+    StatusBar,
+    SafeAreaView
 } from 'react-native';
 import { ThemeContext } from '../context/ThemeContext';
 import Header from '../components/Header';
@@ -41,15 +42,11 @@ const SettingsScreen = ({ navigation }) => {
     }
 
     return (
-        <View style={[styles.container, { backgroundColor: COLORS.background }]}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.background }}>
+            <Header title="Settings" showBack={true} showCart={false} />
             <StatusBar
                 barStyle={isDarkMode ? 'light-content' : 'dark-content'}
                 backgroundColor={COLORS.background}
-            />
-            <Header
-                title="Settings"
-                showBack={true}
-                showCart={false}
             />
 
             <ScrollView showsVerticalScrollIndicator={false}>
@@ -115,7 +112,7 @@ const SettingsScreen = ({ navigation }) => {
                     </View>
                 </View>
             </ScrollView>
-        </View>
+        </SafeAreaView>
     );
 };
 

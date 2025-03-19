@@ -9,7 +9,8 @@ import {
     ActivityIndicator,
     Alert,
     KeyboardAvoidingView,
-    Platform
+    Platform,
+    SafeAreaView
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AuthContext } from '../context/AuthContext';
@@ -325,211 +326,213 @@ const ManageAddressScreen = ({ navigation }) => {
     }
 
     return (
-        <KeyboardAvoidingView
-            style={[styles.container, { backgroundColor: COLORS.background }]}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
-        >
-            <Header title="Manage Addresses" showBack={true} onBackPress={() => navigation.goBack()} />
+        <SafeAreaView style={[styles.container, { backgroundColor: COLORS.background }]}>
+            <Header title="Manage Address" showBack={true} showCart={false} />
 
-            <ScrollView contentContainerStyle={styles.scrollContainer}>
-                {/* Manage Addresses Section */}
-                <View style={[styles.section, { backgroundColor: COLORS.white }]}>
-                    <View style={styles.sectionHeader}>
-                        <Text style={[styles.sectionTitle, { color: COLORS.secondary }]}>
-                            Manage Addresses
-                        </Text>
-                        <TouchableOpacity
-                            style={[styles.addButton, { backgroundColor: COLORS.primary }]}
-                            onPress={() => setIsAddingAddress(true)}
-                        >
-                            <Ionicons name="add" size={20} color={COLORS.white} />
-                            <Text style={[styles.addButtonText, { color: COLORS.white }]}>
-                                Add Address
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={{ flex: 1 }}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+            >
+                <ScrollView contentContainerStyle={styles.scrollContainer}>
+                    {/* Manage Addresses Section */}
+                    <View style={[styles.section, { backgroundColor: COLORS.white }]}>
+                        <View style={styles.sectionHeader}>
+                            <Text style={[styles.sectionTitle, { color: COLORS.secondary }]}>
+                                Manage Addresses
                             </Text>
-                        </TouchableOpacity>
-                    </View>
+                            <TouchableOpacity
+                                style={[styles.addButton, { backgroundColor: COLORS.primary }]}
+                                onPress={() => setIsAddingAddress(true)}
+                            >
+                                <Ionicons name="add" size={20} color={COLORS.white} />
+                                <Text style={[styles.addButtonText, { color: COLORS.white }]}>
+                                    Add Address
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
 
-                    {addresses.length === 0 ? (
-                        <Text style={[styles.emptyText, { color: COLORS.gray }]}>
-                            No addresses added yet.
-                        </Text>
-                    ) : (
-                        addresses.map((address, index) => (
-                            <View key={`address-${index}`} style={styles.addressCard}>
+                        {addresses.length === 0 ? (
+                            <Text style={[styles.emptyText, { color: COLORS.gray }]}>
+                                No addresses added yet.
+                            </Text>
+                        ) : (
+                            addresses.map((address, index) => (
+                                <View key={`address-${index}`} style={styles.addressCard}>
+                                    <TextInput
+                                        style={[styles.addressInput, { color: COLORS.secondary }]}
+                                        value={address}
+                                        onChangeText={(text) => handleChangeAddress(index, text)}
+                                        placeholder="Enter address"
+                                        placeholderTextColor={COLORS.gray}
+                                        multiline
+                                    />
+                                    <TouchableOpacity
+                                        style={[styles.deleteButton, { backgroundColor: COLORS.error }]}
+                                        onPress={() => handleDeleteAddress(index)}
+                                    >
+                                        <Ionicons name="trash" size={16} color={COLORS.white} />
+                                        <Text style={[styles.deleteButtonText, { color: COLORS.white }]}>Delete</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            ))
+                        )}
+
+                        {isAddingAddress && (
+                            <View style={styles.addNewContainer}>
                                 <TextInput
-                                    style={[styles.addressInput, { color: COLORS.secondary }]}
-                                    value={address}
-                                    onChangeText={(text) => handleChangeAddress(index, text)}
-                                    placeholder="Enter address"
+                                    style={[
+                                        styles.input,
+                                        {
+                                            borderColor: validationErrors.address ? COLORS.error : COLORS.lightGray,
+                                            color: COLORS.secondary
+                                        }
+                                    ]}
+                                    value={newAddress}
+                                    onChangeText={setNewAddress}
+                                    placeholder="Enter new address"
                                     placeholderTextColor={COLORS.gray}
                                     multiline
                                 />
-                                <TouchableOpacity
-                                    style={[styles.deleteButton, { backgroundColor: COLORS.error }]}
-                                    onPress={() => handleDeleteAddress(index)}
-                                >
-                                    <Ionicons name="trash" size={16} color={COLORS.white} />
-                                    <Text style={[styles.deleteButtonText, { color: COLORS.white }]}>Delete</Text>
-                                </TouchableOpacity>
+                                {validationErrors.address && (
+                                    <Text style={[styles.errorText, { color: COLORS.error }]}>
+                                        {validationErrors.address}
+                                    </Text>
+                                )}
+                                <View style={styles.buttonRow}>
+                                    <TouchableOpacity
+                                        style={[styles.actionButton, { backgroundColor: COLORS.primary }]}
+                                        onPress={handleAddAddress}
+                                    >
+                                        <Text style={[styles.actionButtonText, { color: COLORS.white }]}>Add</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={[styles.actionButton, { backgroundColor: COLORS.gray }]}
+                                        onPress={() => {
+                                            setIsAddingAddress(false);
+                                            setNewAddress('');
+                                            setValidationErrors({});
+                                        }}
+                                    >
+                                        <Text style={[styles.actionButtonText, { color: COLORS.white }]}>Cancel</Text>
+                                    </TouchableOpacity>
+                                </View>
                             </View>
-                        ))
-                    )}
-
-                    {isAddingAddress && (
-                        <View style={styles.addNewContainer}>
-                            <TextInput
-                                style={[
-                                    styles.input,
-                                    {
-                                        borderColor: validationErrors.address ? COLORS.error : COLORS.lightGray,
-                                        color: COLORS.secondary
-                                    }
-                                ]}
-                                value={newAddress}
-                                onChangeText={setNewAddress}
-                                placeholder="Enter new address"
-                                placeholderTextColor={COLORS.gray}
-                                multiline
-                            />
-                            {validationErrors.address && (
-                                <Text style={[styles.errorText, { color: COLORS.error }]}>
-                                    {validationErrors.address}
-                                </Text>
-                            )}
-                            <View style={styles.buttonRow}>
-                                <TouchableOpacity
-                                    style={[styles.actionButton, { backgroundColor: COLORS.primary }]}
-                                    onPress={handleAddAddress}
-                                >
-                                    <Text style={[styles.actionButtonText, { color: COLORS.white }]}>Add</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    style={[styles.actionButton, { backgroundColor: COLORS.gray }]}
-                                    onPress={() => {
-                                        setIsAddingAddress(false);
-                                        setNewAddress('');
-                                        setValidationErrors({});
-                                    }}
-                                >
-                                    <Text style={[styles.actionButtonText, { color: COLORS.white }]}>Cancel</Text>
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                    )}
-                </View>
-
-                {/* Manage Pincodes Section */}
-                <View style={[styles.section, { backgroundColor: COLORS.white }]}>
-                    <View style={styles.sectionHeader}>
-                        <Text style={[styles.sectionTitle, { color: COLORS.secondary }]}>
-                            Manage Pincodes
-                        </Text>
-                        <TouchableOpacity
-                            style={[styles.addButton, { backgroundColor: COLORS.primary }]}
-                            onPress={() => setIsAddingPincode(true)}
-                        >
-                            <Ionicons name="add" size={20} color={COLORS.white} />
-                            <Text style={[styles.addButtonText, { color: COLORS.white }]}>
-                                Add Pincode
-                            </Text>
-                        </TouchableOpacity>
+                        )}
                     </View>
 
-                    {pincodes.length === 0 ? (
-                        <Text style={[styles.emptyText, { color: COLORS.gray }]}>
-                            No pincodes added yet.
-                        </Text>
-                    ) : (
-                        pincodes.map((pincode, index) => (
-                            <View key={`pincode-${index}`} style={styles.pincodeCard}>
+                    {/* Manage Pincodes Section */}
+                    <View style={[styles.section, { backgroundColor: COLORS.white }]}>
+                        <View style={styles.sectionHeader}>
+                            <Text style={[styles.sectionTitle, { color: COLORS.secondary }]}>
+                                Manage Pincodes
+                            </Text>
+                            <TouchableOpacity
+                                style={[styles.addButton, { backgroundColor: COLORS.primary }]}
+                                onPress={() => setIsAddingPincode(true)}
+                            >
+                                <Ionicons name="add" size={20} color={COLORS.white} />
+                                <Text style={[styles.addButtonText, { color: COLORS.white }]}>
+                                    Add Pincode
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        {pincodes.length === 0 ? (
+                            <Text style={[styles.emptyText, { color: COLORS.gray }]}>
+                                No pincodes added yet.
+                            </Text>
+                        ) : (
+                            pincodes.map((pincode, index) => (
+                                <View key={`pincode-${index}`} style={styles.pincodeCard}>
+                                    <TextInput
+                                        style={[styles.pincodeInput, { color: COLORS.secondary }]}
+                                        value={pincode}
+                                        onChangeText={(text) => handleChangePincode(index, text)}
+                                        placeholder="Enter pincode"
+                                        placeholderTextColor={COLORS.gray}
+                                        keyboardType="numeric"
+                                        maxLength={6}
+                                    />
+                                    <TouchableOpacity
+                                        style={[styles.deleteButton, { backgroundColor: COLORS.error }]}
+                                        onPress={() => handleDeletePincode(index)}
+                                    >
+                                        <Ionicons name="trash" size={16} color={COLORS.white} />
+                                        <Text style={[styles.deleteButtonText, { color: COLORS.white }]}>Delete</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            ))
+                        )}
+
+                        {isAddingPincode && (
+                            <View style={styles.addNewContainer}>
                                 <TextInput
-                                    style={[styles.pincodeInput, { color: COLORS.secondary }]}
-                                    value={pincode}
-                                    onChangeText={(text) => handleChangePincode(index, text)}
-                                    placeholder="Enter pincode"
+                                    ref={pincodeInputRef}
+                                    style={[
+                                        styles.input,
+                                        {
+                                            borderColor: validationErrors.pincode ? COLORS.error : COLORS.lightGray,
+                                            color: COLORS.secondary
+                                        }
+                                    ]}
+                                    value={newPincode}
+                                    onChangeText={setNewPincode}
+                                    placeholder="Enter new pincode"
                                     placeholderTextColor={COLORS.gray}
                                     keyboardType="numeric"
                                     maxLength={6}
                                 />
-                                <TouchableOpacity
-                                    style={[styles.deleteButton, { backgroundColor: COLORS.error }]}
-                                    onPress={() => handleDeletePincode(index)}
-                                >
-                                    <Ionicons name="trash" size={16} color={COLORS.white} />
-                                    <Text style={[styles.deleteButtonText, { color: COLORS.white }]}>Delete</Text>
-                                </TouchableOpacity>
+                                {validationErrors.pincode && (
+                                    <Text style={[styles.errorText, { color: COLORS.error }]}>
+                                        {validationErrors.pincode}
+                                    </Text>
+                                )}
+                                <View style={styles.buttonRow}>
+                                    <TouchableOpacity
+                                        style={[styles.actionButton, { backgroundColor: COLORS.primary }]}
+                                        onPress={handleAddPincode}
+                                    >
+                                        <Text style={[styles.actionButtonText, { color: COLORS.white }]}>Add</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={[styles.actionButton, { backgroundColor: COLORS.gray }]}
+                                        onPress={() => {
+                                            setIsAddingPincode(false);
+                                            setNewPincode('');
+                                            setValidationErrors({});
+                                        }}
+                                    >
+                                        <Text style={[styles.actionButtonText, { color: COLORS.white }]}>Cancel</Text>
+                                    </TouchableOpacity>
+                                </View>
                             </View>
-                        ))
-                    )}
+                        )}
+                    </View>
 
-                    {isAddingPincode && (
-                        <View style={styles.addNewContainer}>
-                            <TextInput
-                                ref={pincodeInputRef}
-                                style={[
-                                    styles.input,
-                                    {
-                                        borderColor: validationErrors.pincode ? COLORS.error : COLORS.lightGray,
-                                        color: COLORS.secondary
-                                    }
-                                ]}
-                                value={newPincode}
-                                onChangeText={setNewPincode}
-                                placeholder="Enter new pincode"
-                                placeholderTextColor={COLORS.gray}
-                                keyboardType="numeric"
-                                maxLength={6}
-                            />
-                            {validationErrors.pincode && (
-                                <Text style={[styles.errorText, { color: COLORS.error }]}>
-                                    {validationErrors.pincode}
+                    {/* Save Changes Button */}
+                    {hasChanges && (
+                        <TouchableOpacity
+                            style={[
+                                styles.saveButton,
+                                { backgroundColor: COLORS.primary },
+                                isLoading && { opacity: 0.7 }
+                            ]}
+                            onPress={handleSaveChanges}
+                            disabled={isLoading}
+                        >
+                            {isLoading ? (
+                                <ActivityIndicator color={COLORS.white} size="small" />
+                            ) : (
+                                <Text style={[styles.saveButtonText, { color: COLORS.white }]}>
+                                    Save Changes
                                 </Text>
                             )}
-                            <View style={styles.buttonRow}>
-                                <TouchableOpacity
-                                    style={[styles.actionButton, { backgroundColor: COLORS.primary }]}
-                                    onPress={handleAddPincode}
-                                >
-                                    <Text style={[styles.actionButtonText, { color: COLORS.white }]}>Add</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    style={[styles.actionButton, { backgroundColor: COLORS.gray }]}
-                                    onPress={() => {
-                                        setIsAddingPincode(false);
-                                        setNewPincode('');
-                                        setValidationErrors({});
-                                    }}
-                                >
-                                    <Text style={[styles.actionButtonText, { color: COLORS.white }]}>Cancel</Text>
-                                </TouchableOpacity>
-                            </View>
-                        </View>
+                        </TouchableOpacity>
                     )}
-                </View>
-
-                {/* Save Changes Button */}
-                {hasChanges && (
-                    <TouchableOpacity
-                        style={[
-                            styles.saveButton,
-                            { backgroundColor: COLORS.primary },
-                            isLoading && { opacity: 0.7 }
-                        ]}
-                        onPress={handleSaveChanges}
-                        disabled={isLoading}
-                    >
-                        {isLoading ? (
-                            <ActivityIndicator color={COLORS.white} size="small" />
-                        ) : (
-                            <Text style={[styles.saveButtonText, { color: COLORS.white }]}>
-                                Save Changes
-                            </Text>
-                        )}
-                    </TouchableOpacity>
-                )}
-            </ScrollView>
-        </KeyboardAvoidingView>
+                </ScrollView>
+            </KeyboardAvoidingView>
+        </SafeAreaView>
     );
 };
 

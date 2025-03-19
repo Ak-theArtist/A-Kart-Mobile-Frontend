@@ -13,7 +13,9 @@ const decodeJWT = (token) => {
             .replace(/_/g, '/');
         const payloadBuffer = Buffer.from(normalizedPayload, 'base64');
         const payloadString = payloadBuffer.toString('utf8');
-        return JSON.parse(payloadString);
+        const decoded = JSON.parse(payloadString);
+        console.log('Decoded JWT token:', decoded);
+        return decoded;
     } catch (error) {
         console.error('Error decoding JWT:', error);
         return {};
@@ -36,6 +38,10 @@ export const AuthProvider = ({ children }) => {
                 if (token) {
                     console.log('Checking user login with token:', token.substring(0, 10) + '...');
 
+                    // Decode token to get role
+                    const decodedToken = decodeJWT(token);
+                    console.log('Decoded token data:', decodedToken);
+
                     // Configure token in axios
                     api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
@@ -44,40 +50,27 @@ export const AuthProvider = ({ children }) => {
                             withCredentials: true
                         });
 
-                        // Store token in user object for easy access
+                        // Store token and role in user object
                         setUser({
                             ...response.data,
-                            token: token
+                            token: token,
+                            role: decodedToken.role || response.data.role
                         });
                     } catch (apiError) {
                         console.error('API error checking user login:', apiError);
 
-                        // If we get a 401 Unauthorized, the token might be expired or invalid
-                        // But we'll keep the token and not log the user out
                         if (apiError.response && apiError.response.status === 401) {
                             console.log('Token might be expired, but keeping user logged in');
 
-                            // Try to create a minimal user object from the token
-                            try {
-                                // Parse the JWT token to get basic user info
-                                const tokenData = decodeJWT(token);
-
-                                setUser({
-                                    _id: tokenData.id || tokenData.sub,
-                                    email: tokenData.email,
-                                    name: tokenData.name || 'User',
-                                    token: token
-                                });
-                            } catch (tokenError) {
-                                console.error('Error parsing token:', tokenError);
-                                // Even if parsing fails, keep a minimal user object
-                                setUser({
-                                    token: token,
-                                    name: 'User'
-                                });
-                            }
+                            // Use decoded token data
+                            setUser({
+                                _id: decodedToken.id || decodedToken.sub,
+                                email: decodedToken.email,
+                                name: decodedToken.name || 'User',
+                                role: decodedToken.role || 'user',
+                                token: token
+                            });
                         } else {
-                            // For other errors, log out
                             await AsyncStorage.removeItem('token');
                             setUser(null);
                         }
@@ -100,16 +93,10 @@ export const AuthProvider = ({ children }) => {
         setIsLoading(true);
         setError(null);
         try {
-            // CRITICAL: Reset all state and storage before login
             console.log('Completely resetting app state before login');
-
-            // Clear user state
             setUser(null);
-
-            // Reset API client
             delete api.defaults.headers.common['Authorization'];
 
-            // Clear ALL local data
             const keys = ['token', 'userId', 'cartItems', 'userAvatar', 'isDarkMode'];
             for (const key of keys) {
                 await AsyncStorage.removeItem(key);
@@ -118,7 +105,6 @@ export const AuthProvider = ({ children }) => {
             console.log('All local storage cleared for fresh login');
             console.log(`Attempting login for: ${email}`);
 
-            // Make the login request
             const response = await api.post('/auth/login', {
                 email,
                 password
@@ -127,16 +113,17 @@ export const AuthProvider = ({ children }) => {
             console.log('Login response:', response.data);
 
             if (response.data && response.data.token) {
-                // Store token
                 const token = response.data.token;
                 await AsyncStorage.setItem('token', token);
                 console.log('Token stored successfully');
 
+                // Decode token to get role
+                const decodedToken = decodeJWT(token);
+                console.log('Decoded token data:', decodedToken);
+
                 try {
-                    // Set new auth header
                     api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
-                    // Get user data
                     const userResponse = await api.get('/auth/me', {
                         headers: {
                             'Authorization': `Bearer ${token}`
@@ -145,16 +132,16 @@ export const AuthProvider = ({ children }) => {
 
                     console.log('User data fetched successfully:', userResponse.data.name);
 
-                    // Save user ID
                     if (userResponse.data && userResponse.data._id) {
                         await AsyncStorage.setItem('userId', userResponse.data._id);
                         console.log('User ID stored in AsyncStorage:', userResponse.data._id);
                     }
 
-                    // Store user in state
+                    // Store user with role from token
                     setUser({
                         ...userResponse.data,
-                        token: token
+                        token: token,
+                        role: decodedToken.role || userResponse.data.role
                     });
 
                     // Explicitly fetch the cart for this user

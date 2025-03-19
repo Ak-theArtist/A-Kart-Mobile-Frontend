@@ -7,7 +7,8 @@ import {
     ScrollView,
     ActivityIndicator,
     Image,
-    FlatList
+    FlatList,
+    SafeAreaView
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AuthContext } from '../context/AuthContext';
@@ -279,8 +280,8 @@ const MyOrdersScreen = ({ navigation }) => {
     }
 
     return (
-        <View style={[styles.container, { backgroundColor: COLORS.background }]}>
-            <Header title="My Orders" showBack={true} onBackPress={() => navigation.goBack()} />
+        <SafeAreaView style={[styles.container, { backgroundColor: COLORS.background }]}>
+            <Header title="My Orders" showBack={true} showCart={false} />
 
             {isLoading ? (
                 <View style={styles.loadingContainer}>
@@ -329,7 +330,7 @@ const MyOrdersScreen = ({ navigation }) => {
                     windowSize={10}
                 />
             )}
-        </View>
+        </SafeAreaView>
     );
 };
 

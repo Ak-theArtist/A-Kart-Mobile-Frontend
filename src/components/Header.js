@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Platform, StatusBar } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, CommonActions } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { ShopContext } from '../context/ShopContext';
 import { ThemeContext } from '../context/ThemeContext';
@@ -19,63 +19,118 @@ const DEFAULT_COLORS = {
     warning: '#FFC107',
 };
 
+// Safe text component to prevent styling issues
+const SafeText = ({ style, children }) => {
+    return <Text style={{ fontSize: 18, fontWeight: 'bold', ...style }}>{children}</Text>;
+};
+
 const Header = ({ title = 'A-Kart', showBack = false, showCart = true }) => {
-    const navigation = useNavigation();
-    const { getTotalCartItems } = useContext(ShopContext);
-    const { colors, isDarkMode } = useContext(ThemeContext);
+    try {
+        const navigation = useNavigation();
+        const { getTotalCartItems, userRole } = useContext(ShopContext);
+        const { colors, isDarkMode } = useContext(ThemeContext);
 
-    // Use colors from context or default colors if not available
-    const themeColors = colors || DEFAULT_COLORS;
+        // Use colors from context or default colors if not available
+        const themeColors = colors || DEFAULT_COLORS;
 
-    const cartItemCount = getTotalCartItems ? getTotalCartItems() : 0;
+        const cartItemCount = getTotalCartItems ? getTotalCartItems() : 0;
 
-    // Choose the appropriate logo based on dark mode
-    const logoSource = isDarkMode
-        ? require('../../public/assets/logo_dark.jpg')
-        : require('../../public/assets/logo.jpg');
+        // Don't show cart for admin users
+        const isAdmin = userRole === 'admin';
+        const shouldShowCart = showCart && !isAdmin;
 
-    return (
-        <View style={[styles.container, {
-            backgroundColor: themeColors.white,
-            borderBottomColor: themeColors.lightGray,
-            paddingTop: 0
-        }]}>
-            <View style={styles.leftContainer}>
-                {showBack && (
-                    <TouchableOpacity
-                        style={styles.backButton}
-                        onPress={() => navigation.goBack()}
-                    >
-                        <Ionicons name="arrow-back" size={24} color={themeColors.secondary} />
-                    </TouchableOpacity>
-                )}
+        // Safe navigation functions with error handling
+        const handleBackPress = () => {
+            try {
+                if (navigation && navigation.canGoBack()) {
+                    navigation.goBack();
+                } else if (navigation) {
+                    // Fallback if can't go back
+                    navigation.dispatch(
+                        CommonActions.navigate({
+                            name: 'HomeScreen',
+                        })
+                    );
+                }
+            } catch (error) {
+                console.log('Error navigating back:', error);
+            }
+        };
+
+        // Navigate to cart with proper screen name
+        const navigateToCart = () => {
+            try {
+                // We need to navigate differently because cart is in a nested navigator
+                if (navigation) {
+                    navigation.navigate('Cart', { screen: 'CartScreen' });
+                }
+            } catch (error) {
+                console.log('Error navigating to cart:', error);
+            }
+        };
+
+        // Choose the appropriate logo based on dark mode
+        const logoSource = isDarkMode
+            ? require('../../public/assets/logo_dark.jpg')
+            : require('../../public/assets/logo.jpg');
+
+        return (
+            <View style={[styles.container, {
+                backgroundColor: themeColors.white,
+                borderBottomColor: themeColors.lightGray,
+                paddingTop: 0
+            }]}>
+                <View style={styles.leftContainer}>
+                    {showBack && (
+                        <TouchableOpacity
+                            style={styles.backButton}
+                            onPress={handleBackPress}
+                        >
+                            <Ionicons name="arrow-back" size={24} color={themeColors.secondary} />
+                        </TouchableOpacity>
+                    )}
+                </View>
+
+                <View style={styles.centerContainer}>
+                    <Image
+                        source={logoSource}
+                        style={styles.logo}
+                    />
+                    <SafeText style={{ color: themeColors.secondary }}>
+                        {title}
+                    </SafeText>
+                </View>
+
+                <View style={styles.rightContainer}>
+                    {shouldShowCart && (
+                        <TouchableOpacity
+                            style={styles.cartButton}
+                            onPress={navigateToCart}
+                        >
+                            <Ionicons name="cart-outline" size={24} color={themeColors.secondary} />
+                            {cartItemCount > 0 && (
+                                <View style={[styles.badge, { backgroundColor: themeColors.primary }]}>
+                                    <SafeText style={{ fontSize: 12, color: themeColors.white }}>
+                                        {cartItemCount}
+                                    </SafeText>
+                                </View>
+                            )}
+                        </TouchableOpacity>
+                    )}
+                </View>
             </View>
-
-            <View style={styles.centerContainer}>
-                <Image
-                    source={logoSource}
-                    style={styles.logo}
-                />
-                <Text style={[styles.title, { color: themeColors.secondary }]}>{title}</Text>
+        );
+    } catch (error) {
+        // Fallback header in case of any error
+        console.log('Error in Header component:', error);
+        return (
+            <View style={[styles.container, { backgroundColor: '#ffffff' }]}>
+                <View style={styles.centerContainer}>
+                    <Text style={{ fontSize: 18, fontWeight: 'bold' }}>{title}</Text>
+                </View>
             </View>
-
-            <View style={styles.rightContainer}>
-                {showCart && (
-                    <TouchableOpacity
-                        style={styles.cartButton}
-                        onPress={() => navigation.navigate('Cart')}
-                    >
-                        <Ionicons name="cart-outline" size={24} color={themeColors.secondary} />
-                        {cartItemCount > 0 && (
-                            <View style={[styles.badge, { backgroundColor: themeColors.primary }]}>
-                                <Text style={[styles.badgeText, { color: themeColors.white }]}>{cartItemCount}</Text>
-                            </View>
-                        )}
-                    </TouchableOpacity>
-                )}
-            </View>
-        </View>
-    );
+        );
+    }
 };
 
 const styles = StyleSheet.create({

@@ -13,42 +13,44 @@ const DEFAULT_COLORS = {
     black: '#000000',
     gray: '#888888',
     lightGray: '#eeeeee',
-    error: '#ff0000',
-    success: '#4CAF50',
-    warning: '#FFC107',
 };
 
 const CustomTabBar = ({ state, descriptors, navigation }) => {
     const { getTotalCartItems } = useContext(ShopContext);
-    const { colors } = useContext(ThemeContext);
+    const { colors, isDarkMode } = useContext(ThemeContext);
 
     // Use colors from context or default colors if not available
     const themeColors = colors || DEFAULT_COLORS;
 
     const cartItemCount = getTotalCartItems ? getTotalCartItems() : 0;
 
+    const onPress = (route, isFocused) => {
+        const event = navigation.emit({
+            type: 'tabPress',
+            target: route.key,
+            canPreventDefault: true,
+        });
+
+        if (!isFocused && !event.defaultPrevented) {
+            // If using a "Cart" tab, ensure we use proper navigation
+            if (route.name === 'Cart') {
+                navigation.navigate('Cart', { screen: 'CartScreen' });
+            } else {
+                navigation.navigate(route.name);
+            }
+        }
+    };
+
     return (
         <View style={[styles.container, {
-            backgroundColor: themeColors.white,
-            borderTopColor: themeColors.lightGray
+            backgroundColor: isDarkMode ? '#000000' : themeColors.white,
+            borderTopColor: isDarkMode ? '#333333' : themeColors.lightGray
         }]}>
             {state.routes.map((route, index) => {
                 const { options } = descriptors[route.key];
                 const label = options.tabBarLabel || options.title || route.name;
 
                 const isFocused = state.index === index;
-
-                const onPress = () => {
-                    const event = navigation.emit({
-                        type: 'tabPress',
-                        target: route.key,
-                        canPreventDefault: true,
-                    });
-
-                    if (!isFocused && !event.defaultPrevented) {
-                        navigation.navigate(route.name);
-                    }
-                };
 
                 let iconName;
                 if (route.name === 'Home') {
@@ -63,33 +65,25 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
                     iconName = isFocused ? 'settings' : 'settings-outline';
                 }
 
+                const color = isFocused ? themeColors.primary : isDarkMode ? '#bbbbbb' : themeColors.gray;
+
                 return (
                     <TouchableOpacity
-                        key={index}
-                        onPress={onPress}
+                        key={route.key}
+                        onPress={() => onPress(route, isFocused)}
                         style={styles.tabButton}
-                        activeOpacity={0.7}
                     >
-                        <View style={styles.iconContainer}>
-                            <Ionicons
-                                name={iconName}
-                                size={24}
-                                color={isFocused ? themeColors.primary : themeColors.gray}
-                            />
-
+                        <View style={styles.tabContent}>
+                            <Ionicons name={iconName} size={24} color={color} />
                             {route.name === 'Cart' && cartItemCount > 0 && (
                                 <View style={[styles.badge, { backgroundColor: themeColors.primary }]}>
-                                    <Text style={[styles.badgeText, { color: themeColors.white }]}>{cartItemCount}</Text>
+                                    <Text style={styles.badgeText}>{cartItemCount}</Text>
                                 </View>
                             )}
+                            <Text style={[styles.label, { color, fontFamily: 'System' }]}>
+                                {label}
+                            </Text>
                         </View>
-
-                        <Text style={[
-                            styles.tabText,
-                            { color: isFocused ? themeColors.primary : themeColors.gray }
-                        ]}>
-                            {label}
-                        </Text>
                     </TouchableOpacity>
                 );
             })}
@@ -102,34 +96,36 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         borderTopWidth: 1,
         height: 60,
+        paddingBottom: 5,
     },
     tabButton: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        paddingVertical: 8,
     },
-    iconContainer: {
+    tabContent: {
+        alignItems: 'center',
         position: 'relative',
-    },
-    tabText: {
-        fontSize: 12,
-        marginTop: 2,
     },
     badge: {
         position: 'absolute',
-        top: -5,
-        right: -10,
+        right: -6,
+        top: -3,
+        backgroundColor: 'red',
         borderRadius: 10,
-        minWidth: 18,
-        height: 18,
+        minWidth: 20,
+        height: 20,
         justifyContent: 'center',
         alignItems: 'center',
-        paddingHorizontal: 3,
     },
     badgeText: {
-        fontSize: 10,
-        fontWeight: 'bold',
+        color: 'white',
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    label: {
+        fontSize: 12,
+        marginTop: 4,
     },
 });
 

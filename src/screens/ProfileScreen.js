@@ -8,7 +8,8 @@ import {
     ActivityIndicator,
     useWindowDimensions,
     Platform,
-    Image
+    Image,
+    SafeAreaView
 } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
 import { ShopContext } from '../context/ShopContext';
@@ -112,8 +113,8 @@ const ProfileScreen = ({ navigation }) => {
     };
 
     return (
-        <View style={[styles.container, { backgroundColor: COLORS.background }]}>
-            <Header title="Profile" showBack={false} />
+        <SafeAreaView style={[styles.container, { backgroundColor: isDarkMode ? COLORS.darkBackground : COLORS.background }]}>
+            <Header title="My Profile" showBack={false} />
 
             <ScrollView
                 contentContainerStyle={[styles.scrollContainer, { paddingHorizontal: padding.container }]}
@@ -274,7 +275,7 @@ const ProfileScreen = ({ navigation }) => {
                 onSelectAvatar={handleAvatarSelect}
                 colors={COLORS}
             />
-        </View>
+        </SafeAreaView>
     );
 };
 
