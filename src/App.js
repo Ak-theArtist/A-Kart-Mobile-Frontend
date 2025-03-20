@@ -29,24 +29,34 @@ try {
     // Create a safe replacement for HeaderTitle
     const SafeHeaderTitle = (props) => {
         try {
+            // Create a safe base style that doesn't rely on any potentially undefined properties
+            const baseStyle = {
+                fontSize: 18,
+                fontWeight: '700',
+                color: props.tintColor || '#000000',
+                textAlign: 'center',
+                includeFontPadding: false,
+                textAlignVertical: 'center'
+            };
+
+            // Safely merge styles, ensuring we don't try to access properties of undefined
+            const mergedStyle = props.style ? [baseStyle, props.style] : baseStyle;
+
             return (
                 <Text
                     {...props}
-                    style={{
-                        fontSize: 18,
-                        fontWeight: '600',
-                        color: props.tintColor || '#000000',
-                        textAlign: 'center'
-                    }}
+                    style={mergedStyle}
+                    allowFontScaling={false}
                 >
                     {props.children}
                 </Text>
             );
         } catch (err) {
             // Failsafe return if even the safe component fails
-            return <Text>{props.children || ''}</Text>;
+            return <Text allowFontScaling={false}>{props.children || ''}</Text>;
         }
     };
+
 
     // Replace the HeaderTitle implementation in all navigation packages
     if (elementsPackage && elementsPackage.HeaderTitle) {
@@ -144,4 +154,4 @@ try {
     console.warn('Could not patch Text component:', e);
 }
 
-export default App; 
+export default App;

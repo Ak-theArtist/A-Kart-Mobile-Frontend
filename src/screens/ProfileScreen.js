@@ -419,4 +419,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default ProfileScreen; 
+export default ProfileScreen;

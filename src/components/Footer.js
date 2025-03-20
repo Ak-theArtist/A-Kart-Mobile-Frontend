@@ -22,6 +22,13 @@ const Footer = () => {
         Linking.openURL(url);
     };
 
+    // Social media links
+    const socialLinks = {
+        facebook: 'https://www.facebook.com/share/1A3EUMzogm/',
+        instagram: 'https://www.instagram.com/ak_drawing_world?igsh=MXJqYTBzb2ZyeWNsNA==',
+        linkedin: 'https://www.linkedin.com/in/akashkumar-thedev?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app'
+    };
+
     // Choose the appropriate logo based on dark mode
     const logoSource = isDarkMode
         ? require('../../public/assets/logo_dark.jpg')
@@ -44,28 +51,12 @@ const Footer = () => {
 
                 <View style={styles.linksSection}>
                     <View style={styles.linkColumn}>
-                        <Text style={[styles.linkHeader, { color: colors.secondary }]}>Shop</Text>
-                        <TouchableOpacity>
-                            <Text style={[styles.linkText, { color: colors.gray }]}>Products</Text>
+                        <Text style={[styles.linkHeader, { color: colors.secondary }]}>Quick Links</Text>
+                        <TouchableOpacity onPress={() => openLink('https://a-kart-frontend.onrender.com')}>
+                            <Text style={[styles.linkText, { color: colors.gray }]}>Website</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity>
-                            <Text style={[styles.linkText, { color: colors.gray }]}>Categories</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity>
-                            <Text style={[styles.linkText, { color: colors.gray }]}>Deals</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    <View style={styles.linkColumn}>
-                        <Text style={[styles.linkHeader, { color: colors.secondary }]}>Support</Text>
-                        <TouchableOpacity>
+                        <TouchableOpacity onPress={() => openLink('mailto:kumarakash91384@gmail.com')}>
                             <Text style={[styles.linkText, { color: colors.gray }]}>Contact Us</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity>
-                            <Text style={[styles.linkText, { color: colors.gray }]}>FAQs</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity>
-                            <Text style={[styles.linkText, { color: colors.gray }]}>Shipping</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -75,22 +66,25 @@ const Footer = () => {
 
             <View style={styles.bottomSection}>
                 <View style={styles.socialIcons}>
-                    <TouchableOpacity style={styles.iconContainer}>
+                    <TouchableOpacity
+                        style={styles.iconContainer}
+                        onPress={() => openLink(socialLinks.facebook)}
+                    >
                         <Ionicons name="logo-facebook" size={24} color={isDarkMode ? colors.primaryAlt : colors.primary} />
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.iconContainer}>
-                        <Ionicons name="logo-twitter" size={24} color={isDarkMode ? colors.primaryAlt : colors.primary} />
+                    <TouchableOpacity
+                        style={styles.iconContainer}
+                        onPress={() => openLink(socialLinks.linkedin)}
+                    >
+                        <Ionicons name="logo-linkedin" size={24} color={isDarkMode ? colors.primaryAlt : colors.primary} />
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.iconContainer}>
+                    <TouchableOpacity
+                        style={styles.iconContainer}
+                        onPress={() => openLink(socialLinks.instagram)}
+                    >
                         <Ionicons name="logo-instagram" size={24} color={isDarkMode ? colors.primaryAlt : colors.primary} />
                     </TouchableOpacity>
                 </View>
-
-                <TouchableOpacity onPress={() => openLink('https://a-kart-frontend.onrender.com')}>
-                    <Text style={[styles.websiteLink, { color: isDarkMode ? colors.primaryAlt : colors.primary }]}>
-                        Official Website
-                    </Text>
-                </TouchableOpacity>
 
                 <Text style={[styles.copyright, { color: colors.gray }]}>
                     © {currentYear} A-Kart. All rights reserved.
@@ -133,19 +127,23 @@ const styles = StyleSheet.create({
     linksSection: {
         flex: 1,
         flexDirection: 'row',
-        justifyContent: 'space-around',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     linkColumn: {
-        marginLeft: 20,
+        marginLeft: 0,
+        alignItems: 'center',
     },
     linkHeader: {
         fontSize: 16,
         fontWeight: 'bold',
         marginBottom: 10,
+        textAlign: 'center',
     },
     linkText: {
         fontSize: 14,
         marginBottom: 8,
+        textAlign: 'center',
     },
     divider: {
         height: 1,
@@ -160,13 +158,7 @@ const styles = StyleSheet.create({
     },
     iconContainer: {
         marginHorizontal: 10,
-    },
-    websiteLink: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        textAlign: 'center',
-        marginBottom: 15,
-        textDecorationLine: 'underline',
+        padding: 8,
     },
     copyright: {
         fontSize: 12,

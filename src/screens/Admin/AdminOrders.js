@@ -338,8 +338,8 @@ const styles = StyleSheet.create({
     },
     actionButton: {
         flex: 1,
-        marginHorizontal: 5,
-        paddingVertical: 12,
+        marginHorizontal: 8,
+        padding: 8,
         borderRadius: 10,
         alignItems: 'center',
         elevation: 2,
@@ -350,7 +350,7 @@ const styles = StyleSheet.create({
     },
     actionButtonText: {
         color: COLORS.white,
-        fontSize: 13,
+        fontSize: 12,
         fontWeight: '700',
         letterSpacing: 0.5,
     },

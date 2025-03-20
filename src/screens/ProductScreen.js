@@ -254,7 +254,7 @@ const ProductScreen = ({ route, navigation }) => {
                             </Text>
                         )}
                     </View>
-                    <View style={styles.ratingContainer}>
+                    {/* <View style={styles.ratingContainer}>
                         {[1, 2, 3, 4, 5].map((star) => (
                             <Ionicons
                                 key={star}
@@ -267,7 +267,7 @@ const ProductScreen = ({ route, navigation }) => {
                         <Text style={[styles.ratingText, { color: colors.gray }]}>
                             ({product.rating || 0})
                         </Text>
-                    </View>
+                    </View> */}
 
                     <View style={[styles.divider, { backgroundColor: colors.lightGray }]} />
 
@@ -428,9 +428,10 @@ const styles = StyleSheet.create({
     },
     thumbnailList: {
         paddingVertical: 10,
-        paddingHorizontal: 10,
+        paddingHorizontal: 72,
         backgroundColor: '#fff',
         justifyContent: 'center',
+        alignItems: 'center',
         marginBottom: 20,
     },
     thumbnailContainer: {

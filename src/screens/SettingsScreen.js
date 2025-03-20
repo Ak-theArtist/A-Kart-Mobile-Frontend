@@ -108,7 +108,7 @@ const SettingsScreen = ({ navigation }) => {
                                 App Version
                             </Text>
                         </View>
-                        <Text style={[styles.versionText, { color: COLORS.gray }]}>1.0.0</Text>
+                        <Text style={[styles.versionText, { color: COLORS.gray }]}>1.0.3</Text>
                     </View>
                 </View>
             </ScrollView>

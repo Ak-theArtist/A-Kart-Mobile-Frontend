@@ -5,6 +5,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { ShopContext } from '../context/ShopContext';
 import { ThemeContext } from '../context/ThemeContext';
 
+// Safe text component to prevent styling issues
+const SafeText = ({ style, children }) => {
+    const baseStyle = { fontSize: 16, fontWeight: 'bold' };
+    return <Text style={[baseStyle, style]}>{children}</Text>;
+};
+
 // Default colors in case ThemeContext is not available
 const DEFAULT_COLORS = {
     primary: 'rgb(9, 64, 147)',
@@ -20,10 +26,6 @@ const DEFAULT_COLORS = {
 };
 
 // Safe text component to prevent styling issues
-const SafeText = ({ style, children }) => {
-    return <Text style={{ fontSize: 18, fontWeight: 'bold', ...style }}>{children}</Text>;
-};
-
 const Header = ({ title = 'A-Kart', showBack = false, showCart = true }) => {
     try {
         const navigation = useNavigation();
@@ -96,7 +98,7 @@ const Header = ({ title = 'A-Kart', showBack = false, showCart = true }) => {
                         source={logoSource}
                         style={styles.logo}
                     />
-                    <SafeText style={{ color: themeColors.secondary }}>
+                    <SafeText style={[styles.title, { color: themeColors.secondary }]}>
                         {title}
                     </SafeText>
                 </View>
@@ -110,7 +112,7 @@ const Header = ({ title = 'A-Kart', showBack = false, showCart = true }) => {
                             <Ionicons name="cart-outline" size={24} color={themeColors.secondary} />
                             {cartItemCount > 0 && (
                                 <View style={[styles.badge, { backgroundColor: themeColors.primary }]}>
-                                    <SafeText style={{ fontSize: 12, color: themeColors.white }}>
+                                    <SafeText style={[styles.badgeText, { color: themeColors.white, fontSize: 12, fontWeight: '600' }]}>
                                         {cartItemCount}
                                     </SafeText>
                                 </View>
@@ -126,7 +128,7 @@ const Header = ({ title = 'A-Kart', showBack = false, showCart = true }) => {
         return (
             <View style={[styles.container, { backgroundColor: '#ffffff' }]}>
                 <View style={styles.centerContainer}>
-                    <Text style={{ fontSize: 18, fontWeight: 'bold' }}>{title}</Text>
+                    <SafeText style={{ fontSize: 18, fontWeight: 'bold' }}>{title}</SafeText>
                 </View>
             </View>
         );
@@ -192,4 +194,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default Header; 
+export default Header;

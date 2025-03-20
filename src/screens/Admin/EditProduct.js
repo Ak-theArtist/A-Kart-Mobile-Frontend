@@ -71,19 +71,32 @@ const EditProduct = ({ productId, onClose }) => {
     const requestCameraPermission = async () => {
         if (Platform.OS === 'android') {
             try {
-                const granted = await PermissionsAndroid.request(
+                const permissions = [
                     PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
-                    {
-                        title: "Storage Permission",
-                        message: "App needs access to your storage to select images.",
-                        buttonNeutral: "Ask Me Later",
-                        buttonNegative: "Cancel",
-                        buttonPositive: "OK"
-                    }
+                    PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE
+                ];
+
+                const statuses = await Promise.all(
+                    permissions.map(permission =>
+                        PermissionsAndroid.request(permission, {
+                            title: "Storage Permission Required",
+                            message: "A-Kart needs access to your storage to select and upload product images.",
+                            buttonNeutral: "Ask Me Later",
+                            buttonNegative: "Cancel",
+                            buttonPositive: "Grant Permission"
+                        })
+                    )
                 );
-                return granted === PermissionsAndroid.RESULTS.GRANTED;
+
+                return statuses.every(
+                    status => status === PermissionsAndroid.RESULTS.GRANTED
+                );
             } catch (err) {
-                console.warn(err);
+                console.error('Permission request error:', err);
+                Alert.alert(
+                    'Permission Error',
+                    'Failed to request storage permissions. Please try again or enable permissions manually in device settings.'
+                );
                 return false;
             }
         }
@@ -502,4 +515,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default EditProduct; 
+export default EditProduct;

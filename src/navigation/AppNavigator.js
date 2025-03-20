@@ -63,29 +63,45 @@ const LogoTitle = ({ title = 'A-Kart' }) => {
     );
 };
 
+// Safe HeaderTitle component to prevent undefined style errors
+const SafeHeaderTitle = ({ children, tintColor, style }) => {
+    // Create a safe base style that doesn't rely on any potentially undefined properties
+    const baseStyle = {
+        fontSize: 18,
+        fontWeight: '700',
+        color: tintColor || '#000000',
+        textAlign: 'center',
+        includeFontPadding: false,
+        textAlignVertical: 'center'
+    };
+
+    // Safely merge styles, ensuring we don't try to access properties of undefined
+    const mergedStyle = style ? [baseStyle, style] : baseStyle;
+
+    return <Text style={mergedStyle} allowFontScaling={false}>{children}</Text>;
+};
+
 // Common stack screen options
-const getScreenOptions = (isDarkMode) => ({
+const getScreenOptions = (colors) => ({
     headerTitleAlign: 'center',
     headerStyle: {
-        backgroundColor: isDarkMode ? '#000000' : '#f8f8f8',
+        backgroundColor: colors.white,
         elevation: 0,
         shadowOpacity: 0,
     },
     headerTitleStyle: {
-        fontSize: 18,
-        color: isDarkMode ? '#ffffff' : '#000000',
+        fontWeight: 'bold',
+        color: colors.secondary,
     },
-    headerTintColor: isDarkMode ? '#ffffff' : '#000000',
-    headerBackTitleVisible: false,
-    cardStyle: {
-        backgroundColor: isDarkMode ? '#000000' : '#f8f8f8',
-    }
+    headerTintColor: colors.secondary,
 });
 
 // Main tab navigator
 const MainTabNavigator = () => {
+    const { user } = useContext(AuthContext);
     const { userRole } = useContext(ShopContext);
-    const { isDarkMode } = useContext(ThemeContext);
+    const { colors } = useContext(ThemeContext);
+    const themeColors = colors || DEFAULT_COLORS;
     const isAdmin = userRole === 'admin';
 
     return (
@@ -94,8 +110,8 @@ const MainTabNavigator = () => {
             screenOptions={{
                 headerShown: false,
                 tabBarStyle: {
-                    backgroundColor: isDarkMode ? '#000000' : '#ffffff',
-                    borderTopColor: isDarkMode ? '#333333' : '#eeeeee',
+                    backgroundColor: themeColors.white,
+                    borderTopColor: themeColors.lightGray,
                 },
             }}
         >
@@ -144,14 +160,21 @@ const MainTabNavigator = () => {
 
 // Home stack
 const HomeStack = () => {
-    const { isDarkMode } = useContext(ThemeContext);
+    const { colors } = useContext(ThemeContext);
+    const themeColors = colors || DEFAULT_COLORS;
+
     return (
-        <Stack.Navigator screenOptions={{
-            ...getScreenOptions(isDarkMode),
-            headerShown: false
-        }}>
+        <Stack.Navigator screenOptions={{ ...getScreenOptions(themeColors), headerShown: false }}>
             <Stack.Screen name="HomeScreen" component={HomeScreen} />
-            <Stack.Screen name="Product" component={ProductScreen} options={{ headerShown: true }} />
+            <Stack.Screen
+                name="Product"
+                component={ProductScreen}
+                options={{
+                    headerShown: false,
+                    headerTitle: props => <SafeHeaderTitle {...props} />,
+                    ...getScreenOptions(themeColors)
+                }}
+            />
             <Stack.Screen name="Contact" component={ContactScreen} options={{ headerShown: false }} />
         </Stack.Navigator>
     );
@@ -159,30 +182,60 @@ const HomeStack = () => {
 
 // Shop stack
 const ShopStack = () => {
-    const { isDarkMode } = useContext(ThemeContext);
+    const { colors } = useContext(ThemeContext);
+    const themeColors = colors || DEFAULT_COLORS;
+
     return (
-        <Stack.Navigator screenOptions={{
-            ...getScreenOptions(isDarkMode),
-            headerShown: false
-        }}>
+        <Stack.Navigator screenOptions={{ ...getScreenOptions(themeColors), headerShown: false }}>
             <Stack.Screen name="ShopScreen" component={ShopScreen} />
-            <Stack.Screen name="Category" component={CategoryScreen} options={{ headerShown: true }} />
-            <Stack.Screen name="Product" component={ProductScreen} options={{ headerShown: true }} />
+            <Stack.Screen
+                name="Category"
+                component={CategoryScreen}
+                options={{
+                    headerShown: true,
+                    headerTitle: props => <SafeHeaderTitle {...props} />,
+                    ...getScreenOptions(themeColors)
+                }}
+            />
+            <Stack.Screen
+                name="Product"
+                component={ProductScreen}
+                options={{
+                    headerShown: false,
+                    headerTitle: props => <SafeHeaderTitle {...props} />,
+                    ...getScreenOptions(themeColors)
+                }}
+            />
         </Stack.Navigator>
     );
 };
 
 // Cart stack
 const CartStack = () => {
-    const { isDarkMode } = useContext(ThemeContext);
+    const { colors } = useContext(ThemeContext);
+    const themeColors = colors || DEFAULT_COLORS;
+
     return (
-        <Stack.Navigator screenOptions={{
-            ...getScreenOptions(isDarkMode),
-            headerShown: false
-        }}>
+        <Stack.Navigator screenOptions={{ ...getScreenOptions(themeColors), headerShown: false }}>
             <Stack.Screen name="CartScreen" component={CartScreen} />
-            <Stack.Screen name="Checkout" component={CheckoutScreen} options={{ headerShown: true }} />
-            <Stack.Screen name="Product" component={ProductScreen} options={{ headerShown: true }} />
+            <Stack.Screen
+                name="Checkout"
+                component={CheckoutScreen}
+                options={{
+                    headerShown: false,
+                    headerTitle: props => <SafeHeaderTitle {...props} />,
+                    ...getScreenOptions(themeColors)
+                }}
+            />
+            <Stack.Screen
+                name="Product"
+                component={ProductScreen}
+                options={{
+                    headerShown: false,
+                    headerTitle: props => <SafeHeaderTitle {...props} />,
+                    ...getScreenOptions(themeColors)
+                }}
+            />
         </Stack.Navigator>
     );
 };
@@ -197,7 +250,7 @@ const ProfileStack = () => {
                 backgroundColor: isDarkMode ? '#000000' : '#f8f8f8',
             }
         }}>
-            <Stack.Screen name="ProfileMain" component={ProfileScreen} />
+            <Stack.Screen name="Profile" component={ProfileScreen} />
             <Stack.Screen name="EditProfile" component={EditProfileScreen} />
             <Stack.Screen name="MyOrders" component={MyOrdersScreen} />
             <Stack.Screen name="ManageAddress" component={ManageAddressScreen} />
@@ -298,4 +351,4 @@ const AppNavigator = () => {
     );
 };
 
-export default AppNavigator; 
+export default AppNavigator;
